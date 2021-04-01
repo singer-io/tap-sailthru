@@ -104,3 +104,9 @@ state.json
 
 # VSCode
 .vscode
+
+# Singer specific config files
+*catalog*.json
+*config*.json
+*state*.json
+target*.json
