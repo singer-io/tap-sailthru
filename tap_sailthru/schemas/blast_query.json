@@ -1,0 +1,62 @@
+{
+  "type": [
+    "null",
+    "object"
+  ],
+  "properties": {
+    "profile_id": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "email hash": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "send_time": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "open_time": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "click_time": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "first_ten_clicks": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "purchase_time": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "device": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "first_ten_clicks_time": {
+      "type": [
+        "null",
+        "string"
+      ]
+    }
+  }
+}
