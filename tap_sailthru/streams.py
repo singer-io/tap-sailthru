@@ -102,3 +102,16 @@ class Purchases(IncrementalStream):
         'purchase_id': '{purchase_id}',
         'purchase_key': 'sid',
     }
+
+
+STREAMS = {
+    'ad_targeter_plans': AdTargeterPlans,
+    'blasts': Blasts,
+    'blast_recipients': BlastRecipients,
+    'blast_repeats': BlastRepeats,
+    'lists': Lists,
+    'list_users': ListUsers,
+    'users': Users,
+    'purchase_log': PurchaseLog,
+    'purchases': Purchases,
+}
