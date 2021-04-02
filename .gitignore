@@ -110,3 +110,6 @@ state.json
 *config*.json
 *state*.json
 target*.json
+
+# local test file
+test_output.sh
