@@ -40,14 +40,7 @@
         "null",
         "object"
       ],
-      "properties": {
-        "bytecode-employees-test": {
-          "type": [
-            "null",
-            "string"
-          ]
-        }
-      }
+      "additionalProperties": true
     },
     "engagement": {
       "type": [
