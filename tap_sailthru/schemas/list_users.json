@@ -1,0 +1,176 @@
+{
+  "type": [
+    "null",
+    "object"
+  ],
+  "properties": {
+    "Profile Id": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Email Hash": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Domain": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Engagement": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Lists": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Profile Created Date": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Signup": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Opens": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Clicks": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Pageviews": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Last Open": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Last Click": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Last Pageview": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Optout Time": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "List Signup": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Geolocation City": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Geolocation State": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Geolocation Country": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Geolocation Zip": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Lifetime Message": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "First Purchase Time": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Purchase Count": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Purchase Price": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Purchase Incomplete": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Last Purchase Time": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Largest Purchase Item Price": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Top Device": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Email Status": {
+      "type": [
+        "null",
+        "string"
+      ]
+    }
+  }
+}

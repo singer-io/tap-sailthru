@@ -1,0 +1,65 @@
+{
+  "type": [
+    "null",
+    "object"
+  ],
+  "properties": {
+    "keys": {
+      "type": [
+        "null",
+        "object"
+      ],
+      "properties": {
+        "sid": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "cookie": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "email": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      }
+    },
+    "vars": {
+      "type": [
+        "null"
+      ]
+    },
+    "lists": {
+      "type": [
+        "null",
+        "object"
+      ],
+      "properties": {
+        "bytecode-employees-test": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      }
+    },
+    "engagement": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "optout_email": {
+      "type": [
+        "null",
+        "string"
+      ]
+    }
+  }
+}

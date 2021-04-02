@@ -334,6 +334,31 @@ class SailthruClient(object):
         """
         return self.api_get('blast', {'blast_id': blast_id})
 
+    def get_blasts(self, status):
+        """
+        Get Blast information
+        http://docs.sailthru.com/api/blast
+        """
+        return self.api_get('blast', {'status': status})
+
+    def get_blast_repeats(self, repeat_id=None):
+        """
+        Get Blast information
+        http://docs.sailthru.com/api/blast
+        """
+        params = {}
+        if repeat_id:
+            params['repeat_id'] = repeat_id
+
+        return self.api_get('blast', params)
+
+    def get_ad_targeter_plans(self, params={}):
+        """
+        Get Ad/Plan information
+        http://docs.sailthru.com/api/ad/plan
+        """
+        return self.api_get('ad/plan', params)
+
     def delete_blast(self, blast_id):
         """
         delete existing blast
