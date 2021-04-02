@@ -150,7 +150,7 @@ class SailthruClient(object):
         """
         with requests.get(export_url, stream=True) as r:
             lines = (line.decode('utf-8') for line in r.iter_lines())
-            for row in csv.DictReader(lines):
+            for _ in csv.DictReader(lines):
                 # Do something with row
                 pass
 
