@@ -112,6 +112,6 @@ STREAMS = {
     'lists': Lists,
     'list_users': ListUsers,
     'users': Users,
-    # 'purchase_log': PurchaseLog,
-    # 'purchases': Purchases,
+    'purchase_log': PurchaseLog,
+    'purchases': Purchases,
 }

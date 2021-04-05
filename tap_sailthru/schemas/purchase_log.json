@@ -1,0 +1,68 @@
+{
+  "type": [
+    "null",
+    "object"
+  ],
+  "properties": {
+    "Date": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Email Hash": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Extid": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Message ID": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Items": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Urls": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Price": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Channel": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Unit Prices": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "Quantities": {
+      "type": [
+        "null",
+        "string"
+      ]
+    }
+  }
+}
