@@ -10,6 +10,17 @@ from tap_sailthru.streams import STREAMS
 def get_abs_path(path):
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), path)
 
+def _get_key_properties_from_meta(schema_meta):
+    return schema_meta[0].get('metadata').get('table-key-properties')
+
+def _get_replication_method_from_meta(schema_meta):
+    return schema_meta[0].get('metadata').get('forced-replication-method')
+
+def _get_replication_key_from_meta(schema_meta):
+    if _get_replication_method_from_meta(schema_meta) == 'INCREMENTAL':
+        return schema_meta[0].get('metadata').get('valid-replication-keys')[0]
+    return None
+
 def get_schemas():
 
     schemas = {}
@@ -54,6 +65,9 @@ def discover():
             'stream': schema_name,
             'tap_stream_id': schema_name,
             'schema': schema,
+            'key_properties': _get_key_properties_from_meta(schema_meta),
+            'replication_method': _get_replication_method_from_meta(schema_meta),
+            'replication_key': _get_replication_key_from_meta(schema_meta),
             'metadata': schema_meta
         }
 

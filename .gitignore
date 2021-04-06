@@ -113,3 +113,4 @@ target*.json
 
 # local test file
 test_output.sh
+tap_sailthru/data_generator.py
