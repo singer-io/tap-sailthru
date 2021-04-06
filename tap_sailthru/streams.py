@@ -80,6 +80,10 @@ class Lists(FullTableStream):
     tap_stream_id = 'lists'
     key_properties = ['list_id']
 
+    def get_records(self):
+        response = self.client.get_lists().get_body()
+        yield from response['lists']
+
 
 class ListUsers(FullTableStream):
     tap_stream_id = 'list_users'
