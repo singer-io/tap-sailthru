@@ -1,3 +1,6 @@
+import singer
+
+LOGGER = singer.get_logger()
 
 class BaseStream:
     object_type = None
@@ -28,12 +31,25 @@ class FullTableStream(BaseStream):
     def __init__(self, client):
         super().__init__(client)
 
+    def get_records(self):
+        raise NotImplementedError("Child classes of FullTableStreams require `get_records` implementation")
+
     def sync(self, state, stream_schema, stream_metadata, config, transformer):
-        pass
+
+        for record in self.get_records():
+            singer.write_record(self.tap_stream_id, record)
+
+        singer.write_state(state)
+        return state
+
 
 class AdTargeterPlans(FullTableStream):
     tap_stream_id = 'ad_targeter_plans'
     key_properties = ['plan_id']
+
+    def get_records(self):
+        response = self.client.get_ad_targeter_plans().get_body()
+        yield from response['ad_plans']
 
 
 class Blasts(IncrementalStream):
