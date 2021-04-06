@@ -1,37 +1,38 @@
 import singer
+from singer import Transformer, metadata
+
+from tap_sailthru.sailthru_client import SailthruClient
+from tap_sailthru.streams import STREAMS
 
 LOGGER = singer.get_logger()
 
 def sync(config, state, catalog):
     """ Sync data from tap source """
-    # Loop over selected streams in catalog
-    for stream in catalog.get_selected_streams(state):
-        LOGGER.info("Syncing stream:" + stream.tap_stream_id)
 
-        bookmark_column = stream.replication_key
-        is_sorted = True  # TODO: indicate whether data is sorted ascending on bookmark value
+    api_key, api_secret = config.get('api_key'), config.get('api_secret')
+    client = SailthruClient(api_key, api_secret)
 
-        singer.write_schema(
-            stream_name=stream.tap_stream_id,
-            schema=stream.schema.to_dict(),
-            key_properties=stream.key_properties,
-        )
+    with Transformer() as transformer:
+        for stream in catalog.get_selected_streams(state):
+            tap_stream_id = stream.tap_stream_id
+            stream_obj = STREAMS[tap_stream_id](client)
+            stream_schema = stream.schema.to_dict()
+            stream_metadata = metadata.to_map(stream.metadata)
 
-        # TODO: delete and replace this inline function with your own data retrieval process:
-        # tap_data = lambda: [{"id": x, "name": "row${x}"} for x in range(10)]
+            LOGGER.info('Starting sync for stream: %s', tap_stream_id)
 
-        # max_bookmark = None
-        # for row in tap_data():
-        #     # TODO: place type conversions or transformations here
+            state = singer.set_currently_syncing(state, tap_stream_id)
+            singer.write_state(state)
 
-        #     # write one or more rows to the stream:
-        #     singer.write_records(stream.tap_stream_id, [row])
-        #     if bookmark_column:
-        #         if is_sorted:
-        #             # update bookmark to latest value
-        #             singer.write_state({stream.tap_stream_id: row[bookmark_column]})
-        #         else:
-        #             # if data unsorted, save max value until end of writes
-        #             max_bookmark = max(max_bookmark, row[bookmark_column])
-        # if bookmark_column and not is_sorted:
-        #     singer.write_state({stream.tap_stream_id: max_bookmark})
+            singer.write_schema(
+                tap_stream_id,
+                stream_schema,
+                stream_obj.key_properties,
+                stream.replication_key
+            )
+
+            state = stream_obj.sync(state, stream_schema, stream_metadata, config, transformer)
+            singer.write_state(state)
+
+    state = singer.set_currently_syncing(state, None)
+    singer.write_state(state)
