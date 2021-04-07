@@ -1,13 +1,8 @@
-import datetime
-from email import utils
-
 import singer
 
-LOGGER = singer.get_logger()
+from tap_sailthru.transform import email_datestring_to_datetime
 
-def email_datestring_to_datetime(datestring):
-    dt = utils.parsedate_to_datetime(datestring).isoformat()
-    return singer.utils.strptime_to_utc(dt)
+LOGGER = singer.get_logger()
 
 class BaseStream:
     object_type = None
