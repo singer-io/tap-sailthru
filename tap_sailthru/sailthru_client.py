@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import csv
 import hashlib
 
-import requests
-
+from .sailthru_error import SailthruClientError
 from .sailthru_http import sailthru_http_request
 
 try:
@@ -131,28 +129,21 @@ class SailthruClient(object):
 
         return self.api_get('job', {'job_id': job_id})
 
-    def create_job(self, job_type, job_params, report_email=None, postback_url=None):
+    def create_job(self, job_params, report_email=None, postback_url=None):
         """
         Start a background job, such as a data import or export.
         https://getstarted.sailthru.com/developers/api/job
         """
-        data = {'job': job_type, **job_params}
+
+        if not job_params.get('job'):
+            raise SailthruClientError('Required job type parameter missing')
 
         if report_email:
-            data['report_email'] = report_email
+            job_params['report_email'] = report_email
         if postback_url:
-            data['postback_url'] = postback_url
+            job_params['postback_url'] = postback_url
 
-        return self.api_post('job', data)
-
-    def get_job_csv(self, export_url):
-        """
-        """
-        with requests.get(export_url, stream=True) as r:
-            lines = (line.decode('utf-8') for line in r.iter_lines())
-            for _ in csv.DictReader(lines):
-                # Do something with row
-                pass
+        return self.api_post('job', job_params)
 
     def get_email(self, email):
         """
