@@ -1,6 +1,13 @@
+import datetime
+from email import utils
+
 import singer
 
 LOGGER = singer.get_logger()
+
+def email_datestring_to_datetime(datestring):
+    dt = utils.parsedate_to_datetime(datestring).isoformat()
+    return singer.utils.strptime_to_utc(dt)
 
 class BaseStream:
     object_type = None
@@ -14,6 +21,9 @@ class BaseStream:
     def __init__(self, client):
         self.client = client
 
+    def get_records(self):
+        raise NotImplementedError("Child classes of BaseStream require `get_records` implementation")
+
 
 class IncrementalStream(BaseStream):
     replication_method = 'INCREMENTAL'
@@ -22,7 +32,20 @@ class IncrementalStream(BaseStream):
         super().__init__(client)
 
     def sync(self, state, stream_schema, stream_metadata, config, transformer):
-        pass
+        start_time = singer.get_bookmark(state, self.tap_stream_id, self.replication_key, config['start_date'])
+        max_record_value = start_time
+        for record in self.get_records():
+            record_replication_value = email_datestring_to_datetime(record[self.replication_key])
+            if record_replication_value > singer.utils.strptime_to_utc(max_record_value):
+                singer.write_record(
+                    self.tap_stream_id,
+                    record,
+                )
+                max_record_value = record_replication_value.isoformat()
+
+        state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, max_record_value)
+        singer.write_state(state)
+        return state
 
 
 class FullTableStream(BaseStream):
@@ -30,9 +53,6 @@ class FullTableStream(BaseStream):
 
     def __init__(self, client):
         super().__init__(client)
-
-    def get_records(self):
-        raise NotImplementedError("Child classes of FullTableStreams require `get_records` implementation")
 
     def sync(self, state, stream_schema, stream_metadata, config, transformer):
 
@@ -60,6 +80,11 @@ class Blasts(IncrementalStream):
     params = {
         'statuses': ['sent', 'sending', 'unscheduled', 'scheduled'],
     }
+
+    def get_records(self):
+        for status in self.params['statuses']:
+            response = self.client.get_blasts(status).get_body()
+            yield from response['blasts']
 
 
 class BlastRecipients(FullTableStream):
