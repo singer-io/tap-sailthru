@@ -1,3 +1,8 @@
+from abc import abstractmethod
+import csv
+import time
+
+import requests
 import singer
 
 from tap_sailthru.transform import email_datestring_to_datetime
@@ -16,8 +21,18 @@ class BaseStream:
     def __init__(self, client):
         self.client = client
 
-    def get_records(self):
+    def get_records(self, options=None):
         raise NotImplementedError("Child classes of BaseStream require `get_records` implementation")
+
+    @abstractmethod
+    def process_job_csv(export_url, chunk_size=1024):
+        """
+        Fetches csv from URL and yields each line.
+        """
+        with requests.get(export_url, stream=True) as r:
+            reader = csv.DictReader(line.decode('utf-8') for line in r.iter_lines(chunk_size=chunk_size))
+            for row in reader:
+                yield row
 
 
 class IncrementalStream(BaseStream):
@@ -78,6 +93,7 @@ class Blasts(IncrementalStream):
 
     def get_records(self):
         for status in self.params['statuses']:
+            # TODO: handle non 200 responses
             response = self.client.get_blasts(status).get_body()
             yield from response['blasts']
 
@@ -89,6 +105,32 @@ class BlastRecipients(FullTableStream):
         'job': 'blast_query',
         'blast_id': '{blast_id}',
     }
+
+    def post(self, parameter):
+        self.params['blast_id'] = parameter
+        LOGGER.info('Starting background job for blast_recipients')
+        # TODO: handle non 200 responses
+        return self.client.create_job(self.params).get_body()
+
+    def get(self, job_id):
+        status = ''
+        while status != 'completed':
+            response = self.client.get_job(job_id).get_body()
+            status = response.get('status')
+            LOGGER.info(f'Job report status: {status}')
+            time.sleep(1)
+
+        return response.get('export_url')
+
+
+    def get_records(self, options=None):
+        # TODO: hardcoding id for now
+        post_response = self.post(parameter=23302084)
+        export_url = self.get(job_id=post_response['job_id'])
+        LOGGER.info(f'export_url: {export_url}')
+
+        for record in self.process_job_csv(export_url):
+            yield record
 
 
 class BlastRepeats(FullTableStream):
