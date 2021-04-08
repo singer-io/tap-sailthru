@@ -24,8 +24,11 @@ class BaseStream:
     def get_records(self, options=None):
         raise NotImplementedError("Child classes of BaseStream require `get_records` implementation")
 
-    def post_job(self, job_name, parameter_key, parameter_value):
-        self.params[parameter_key] = parameter_value
+    def set_parameters(self, params):
+        self.params = params
+
+    def post_job(self):
+        job_name = self.params.get('job')
         LOGGER.info(f'Starting background job for {job_name}')
         # TODO: handle non 200 responses
         return self.client.create_job(self.params).get_body()
@@ -122,10 +125,15 @@ class BlastRecipients(FullTableStream):
     }
 
     def get_records(self, options=None):
+        # TODO: hardcoding for now
+        params = {
+            'job': 'blast_query',
+            'blast_id': 23302084,
+        }
+
+        self.set_parameters(params)
         # TODO: hardcoding id for now
-        response = self.post_job(job_name='blast_query',
-                                      parameter_key='blast_id',
-                                      parameter_value=23302084)
+        response = self.post_job()
         export_url = self.get_job_url(job_id=response['job_id'])
         LOGGER.info(f'export_url: {export_url}')
 
@@ -154,6 +162,21 @@ class ListUsers(FullTableStream):
         'list': '{list_name}',
     }
 
+    def get_records(self, options=None):
+        # TODO: hardcoding params for now
+        params = {
+            'job': 'export_list_data',
+            'list': 'bytecode-employees-test',
+        }
+
+        self.set_parameters(params)
+        # TODO: hardcoding id for now
+        response = self.post_job()
+        export_url = self.get_job_url(job_id=response['job_id'])
+        LOGGER.info(f'export_url: {export_url}')
+
+        yield from self.process_job_csv(export_url=export_url)
+
 
 class Users(FullTableStream):
     tap_stream_id = 'users'
@@ -172,6 +195,21 @@ class PurchaseLog(FullTableStream):
         'start_date': '{purchase_log_start_date}',
         'end_date': '{purchase_log_end_date}',
     }
+
+    def get_records(self, options=None):
+        # TODO: hardcoding params for now
+        params = {
+            'job': 'export_purchase_log',
+            'start_date': 20210310,
+            'end_date': 20210408,
+        }
+        # TODO: hardcoding id for now
+        self.set_parameters(params)
+        response = self.post_job()
+        export_url = self.get_job_url(job_id=response['job_id'])
+        LOGGER.info(f'export_url: {export_url}')
+
+        yield from self.process_job_csv(export_url=export_url)
 
 
 class Purchases(IncrementalStream):
