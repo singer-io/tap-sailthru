@@ -24,8 +24,23 @@ class BaseStream:
     def get_records(self, options=None):
         raise NotImplementedError("Child classes of BaseStream require `get_records` implementation")
 
-    @abstractmethod
-    def process_job_csv(export_url, chunk_size=1024):
+    def post_job(self, job_name, parameter_key, parameter_value):
+        self.params[parameter_key] = parameter_value
+        LOGGER.info(f'Starting background job for {job_name}')
+        # TODO: handle non 200 responses
+        return self.client.create_job(self.params).get_body()
+
+    def get_job_url(self, job_id):
+        status = ''
+        while status != 'completed':
+            response = self.client.get_job(job_id).get_body()
+            status = response.get('status')
+            LOGGER.info(f'Job report status: {status}')
+            time.sleep(1)
+
+        return response.get('export_url')
+
+    def process_job_csv(self, export_url, chunk_size=1024):
         """
         Fetches csv from URL and yields each line.
         """
@@ -106,31 +121,15 @@ class BlastRecipients(FullTableStream):
         'blast_id': '{blast_id}',
     }
 
-    def post(self, parameter):
-        self.params['blast_id'] = parameter
-        LOGGER.info('Starting background job for blast_recipients')
-        # TODO: handle non 200 responses
-        return self.client.create_job(self.params).get_body()
-
-    def get(self, job_id):
-        status = ''
-        while status != 'completed':
-            response = self.client.get_job(job_id).get_body()
-            status = response.get('status')
-            LOGGER.info(f'Job report status: {status}')
-            time.sleep(1)
-
-        return response.get('export_url')
-
-
     def get_records(self, options=None):
         # TODO: hardcoding id for now
-        post_response = self.post(parameter=23302084)
-        export_url = self.get(job_id=post_response['job_id'])
+        response = self.post_job(job_name='blast_query',
+                                      parameter_key='blast_id',
+                                      parameter_value=23302084)
+        export_url = self.get_job_url(job_id=response['job_id'])
         LOGGER.info(f'export_url: {export_url}')
 
-        for record in self.process_job_csv(export_url):
-            yield record
+        yield from self.process_job_csv(export_url=export_url)
 
 
 class BlastRepeats(FullTableStream):
