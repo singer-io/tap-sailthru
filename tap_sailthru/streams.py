@@ -1,11 +1,13 @@
-from abc import abstractmethod
 import csv
 import time
+from abc import abstractmethod
+from datetime import datetime
 
 import requests
 import singer
 
-from tap_sailthru.transform import email_datestring_to_datetime
+from tap_sailthru.transform import (email_datestring_to_datetime,
+                                    get_start_and_end_date_params)
 
 LOGGER = singer.get_logger()
 
@@ -84,7 +86,11 @@ class FullTableStream(BaseStream):
 
     def sync(self, state, stream_schema, stream_metadata, config, transformer):
 
-        for record in self.get_records():
+        options = {
+            'config': config,
+        }
+
+        for record in self.get_records(options=options):
             singer.write_record(self.tap_stream_id, record)
 
         singer.write_state(state)
@@ -197,13 +203,18 @@ class PurchaseLog(FullTableStream):
     }
 
     def get_records(self, options=None):
-        # TODO: hardcoding params for now
+
+        if options:
+            config = options.get('config')
+            datestring = config.get('start_date')
+            start_date, end_date = get_start_and_end_date_params(datestring)
+
         params = {
             'job': 'export_purchase_log',
-            'start_date': 20210310,
-            'end_date': 20210408,
+            'start_date': start_date,
+            'end_date': end_date,
         }
-        # TODO: hardcoding id for now
+
         self.set_parameters(params)
         response = self.post_job()
         export_url = self.get_job_url(job_id=response['job_id'])
