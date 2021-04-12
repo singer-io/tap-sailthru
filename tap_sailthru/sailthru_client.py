@@ -341,7 +341,7 @@ class SailthruClient(object):
         if repeat_id:
             params['repeat_id'] = repeat_id
 
-        return self.api_get('blast', params)
+        return self.api_get('blast_repeat', params)
 
     def get_ad_targeter_plans(self, params={}):
         """
