@@ -1,5 +1,6 @@
 import datetime
 from email import utils
+from typing import List
 
 import singer
 
@@ -48,3 +49,7 @@ def get_start_and_end_date_params(start_date: str) -> str:
     end = start + datetime.timedelta(days=30)
 
     return _format_date_for_job_params(start), _format_date_for_job_params(end)
+
+
+def sort_by_rfc2822(data: List[dict], sort_key) -> List[dict]:
+    return sorted(data, key=lambda row: email_datestring_to_datetime(row[sort_key]))

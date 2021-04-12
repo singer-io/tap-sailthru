@@ -4,7 +4,8 @@ import pytz
 
 from tap_sailthru.transform import (email_datestring_to_datetime,
                                     _format_date_for_job_params,
-                                    get_start_and_end_date_params)
+                                    get_start_and_end_date_params,
+                                    sort_by_rfc2822)
 
 
 def test_email_datestring_to_datetime():
@@ -40,5 +41,31 @@ def test_get_start_and_end_date_params():
 
     for test_case in test_cases:
         result = get_start_and_end_date_params(test_case['case'])
+
+        assert test_case['expected'] == result
+
+
+def test_sort_by_rfc2822():
+    test_cases = [
+        {'case': [
+            {'modify_time': 'Mon, 19 Apr 2021 06:03:15 -0000', 'random_value': 61},
+            {'modify_time': 'Wed, 07 Apr 2021 06:03:15 -0000', 'random_value': 11},
+            {'modify_time': 'Sun, 04 Apr 2021 06:03:15 -0000', 'random_value': 42},
+            {'modify_time': 'Thu, 15 Apr 2021 06:03:15 -0000', 'random_value': 81},
+            {'modify_time': 'Thu, 08 Apr 2021 06:03:15 -0000', 'random_value': 4},
+        ],
+        'expected': [
+            {'modify_time': 'Sun, 04 Apr 2021 06:03:15 -0000', 'random_value': 42},
+            {'modify_time': 'Wed, 07 Apr 2021 06:03:15 -0000', 'random_value': 11},
+            {'modify_time': 'Thu, 08 Apr 2021 06:03:15 -0000', 'random_value': 4},
+            {'modify_time': 'Thu, 15 Apr 2021 06:03:15 -0000', 'random_value': 81},
+            {'modify_time': 'Mon, 19 Apr 2021 06:03:15 -0000', 'random_value': 61},
+        ],
+        'sort_key': 'modify_time',
+        }
+    ]
+
+    for test_case in test_cases:
+        result = sort_by_rfc2822(data=test_case['case'], sort_key=test_case['sort_key'])
 
         assert test_case['expected'] == result
