@@ -103,7 +103,7 @@ class AdTargeterPlans(FullTableStream):
     tap_stream_id = 'ad_targeter_plans'
     key_properties = ['plan_id']
 
-    def get_records(self):
+    def get_records(self, options=None):
         response = self.client.get_ad_targeter_plans().get_body()
         yield from response['ad_plans']
 
@@ -117,7 +117,7 @@ class Blasts(IncrementalStream):
         'statuses': ['sent', 'sending', 'unscheduled', 'scheduled'],
     }
 
-    def get_records(self):
+    def get_records(self, options=None):
         # TODO: function not looping through all statuses
         for status in self.params['statuses']:
             # TODO: handle non 200 responses
@@ -155,7 +155,7 @@ class BlastRepeats(IncrementalStream):
     replication_key = 'modify_time'
     valid_replication_keys = ['modify_time']
 
-    def get_records(self):
+    def get_records(self, options=None):
         response = self.client.get_blast_repeats().get_body()
         repeats = response['repeats']
         # Sort repeats by 'modify_time' field
@@ -167,7 +167,7 @@ class Lists(FullTableStream):
     tap_stream_id = 'lists'
     key_properties = ['list_id']
 
-    def get_records(self):
+    def get_records(self, options=None):
         response = self.client.get_lists().get_body()
         yield from response['lists']
 
@@ -221,11 +221,11 @@ class PurchaseLog(FullTableStream):
             datestring = config.get('start_date')
             start_date, end_date = get_start_and_end_date_params(datestring)
 
-        params = {
-            'job': 'export_purchase_log',
-            'start_date': start_date,
-            'end_date': end_date,
-        }
+            params = {
+                'job': 'export_purchase_log',
+                'start_date': start_date,
+                'end_date': end_date,
+            }
 
         self.set_parameters(params)
         response = self.post_job()
