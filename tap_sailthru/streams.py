@@ -7,7 +7,8 @@ import requests
 import singer
 
 from tap_sailthru.transform import (email_datestring_to_datetime,
-                                    get_start_and_end_date_params)
+                                    get_start_and_end_date_params,
+                                    sort_by_rfc2822)
 
 LOGGER = singer.get_logger()
 
@@ -71,6 +72,7 @@ class IncrementalStream(BaseStream):
                     self.tap_stream_id,
                     record,
                 )
+                # TODO: ensure results are ordered
                 max_record_value = record_replication_value.isoformat()
 
         state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, max_record_value)
@@ -116,6 +118,7 @@ class Blasts(IncrementalStream):
     }
 
     def get_records(self):
+        # TODO: function not looping through all statuses
         for status in self.params['statuses']:
             # TODO: handle non 200 responses
             response = self.client.get_blasts(status).get_body()
@@ -146,10 +149,19 @@ class BlastRecipients(FullTableStream):
         yield from self.process_job_csv(export_url=export_url)
 
 
-class BlastRepeats(FullTableStream):
+class BlastRepeats(IncrementalStream):
     tap_stream_id = 'blast_repeats'
     key_properties = ['repeat_id']
+    replication_key = 'modify_time'
+    valid_replication_keys = ['modify_time']
 
+    def get_records(self):
+        response = self.client.get_blast_repeats().get_body()
+        repeats = response['repeats']
+        # Sort repeats by 'modify_time' field
+        sorted_repeats = sort_by_rfc2822(repeats, sort_key='modify_time')
+
+        yield from sorted_repeats
 
 class Lists(FullTableStream):
     tap_stream_id = 'lists'
