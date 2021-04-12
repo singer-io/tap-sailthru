@@ -5,6 +5,7 @@ from datetime import datetime
 
 import requests
 import singer
+from tap_sailthru import transform
 
 from tap_sailthru.transform import (email_datestring_to_datetime,
                                     get_start_and_end_date_params,
@@ -93,7 +94,8 @@ class FullTableStream(BaseStream):
         }
 
         for record in self.get_records(options=options):
-            singer.write_record(self.tap_stream_id, record)
+            transformed_record = transformer.transform(record, stream_schema, stream_metadata)
+            singer.write_record(self.tap_stream_id, transformed_record)
 
         singer.write_state(state)
         return state
