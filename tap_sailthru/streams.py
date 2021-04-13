@@ -21,6 +21,7 @@ class BaseStream:
     key_properties = []
     valid_replication_keys = []
     params = {}
+    parent = None
 
     def __init__(self, client):
         self.client = client
@@ -31,9 +32,19 @@ class BaseStream:
     def set_parameters(self, params):
         self.params = params
 
-    def post_job(self):
+    def get_data_for_children(self):
+        raise NotImplementedError("Implementation required for streams with children")
+
+    def get_parent_data(self):
+        parent = self.parent(self.client)
+        return parent.get_data_for_children()
+
+    def post_job(self, parameter=None):
         job_name = self.params.get('job')
-        LOGGER.info(f'Starting background job for {job_name}')
+        if parameter:
+            LOGGER.info(f'Starting background job for {job_name}, parameter={parameter}')
+        else:
+            LOGGER.info(f'Starting background job for {job_name}')
         # TODO: handle non 200 responses
         return self.client.create_job(self.params).get_body()
 
@@ -144,7 +155,7 @@ class BlastRecipients(FullTableStream):
 
         self.set_parameters(params)
         # TODO: hardcoding id for now
-        response = self.post_job()
+        response = self.post_job(parameter=params['blast_id'])
         export_url = self.get_job_url(job_id=response['job_id'])
         LOGGER.info(f'export_url: {export_url}')
 
@@ -173,6 +184,11 @@ class Lists(FullTableStream):
         response = self.client.get_lists().get_body()
         yield from response['lists']
 
+    def get_data_for_children(self):
+        response = self.client.get_lists().get_body()
+        for list in response['lists']:
+            yield list['name']
+
 
 class ListUsers(FullTableStream):
     tap_stream_id = 'list_users'
@@ -181,21 +197,25 @@ class ListUsers(FullTableStream):
         'job': 'export_list_data',
         'list': '{list_name}',
     }
+    parent = Lists
+
+    def get_data_for_children(self):
+        pass
 
     def get_records(self, options=None):
-        # TODO: hardcoding params for now
-        params = {
-            'job': 'export_list_data',
-            'list': 'bytecode-employees-test',
-        }
 
-        self.set_parameters(params)
-        # TODO: hardcoding id for now
-        response = self.post_job()
-        export_url = self.get_job_url(job_id=response['job_id'])
-        LOGGER.info(f'export_url: {export_url}')
+        for list_name in self.get_parent_data():
+            params = {
+                'job': 'export_list_data',
+                'list': list_name,
+            }
 
-        yield from self.process_job_csv(export_url=export_url)
+            self.set_parameters(params)
+            response = self.post_job(parameter=params['list'])
+            export_url = self.get_job_url(job_id=response['job_id'])
+            LOGGER.info(f'export_url: {export_url}')
+
+            yield from self.process_job_csv(export_url=export_url)
 
 
 class Users(FullTableStream):
@@ -230,7 +250,7 @@ class PurchaseLog(FullTableStream):
             }
 
         self.set_parameters(params)
-        response = self.post_job()
+        response = self.post_job(parameter=(params['start_date'], params['end_date']))
         export_url = self.get_job_url(job_id=response['job_id'])
         LOGGER.info(f'export_url: {export_url}')
 
