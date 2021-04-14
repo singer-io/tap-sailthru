@@ -52,4 +52,30 @@ def get_start_and_end_date_params(start_date: str) -> str:
 
 
 def sort_by_rfc2822(data: List[dict], sort_key) -> List[dict]:
+    """
+    Takes in a list of dictionaries and sorts them in ascending order by date.
+
+    :param data: the list of dictionaries to sort
+    :param sort_key: the name of the field containing an RFC 2822 formatted date
+    :return: a list of dictionaries sorted in ascending order by their RFC 2822 date
+    """
     return sorted(data, key=lambda row: email_datestring_to_datetime(row[sort_key]))
+
+
+def flatten_user_response(response: dict) -> dict:
+    """
+    Takes in a response from the sailthru /user endpoint and flattens the response.
+
+    :param response: the dictionary representing the response object from the api call
+    :return: a flattened dicitonary
+    """
+
+    return {
+        'user_id': response.get('keys', {}).get('sid'),
+        'cookie': response.get('keys', {}).get('cookie'),
+        'email': response.get('keys', {}).get('email'),
+        'vars': response.get('vars'),
+        'lists': [list_name for list_name in response.get('lists', {}).keys()],
+        'engagement': response.get('engagement'),
+        'optout_email': response.get('optout_email'),
+    }

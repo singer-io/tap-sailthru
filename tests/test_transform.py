@@ -1,11 +1,13 @@
 import datetime
+from tap_sailthru.sailthru_http import flatten_nested_hash
 
 import pytz
 
 from tap_sailthru.transform import (email_datestring_to_datetime,
                                     _format_date_for_job_params,
                                     get_start_and_end_date_params,
-                                    sort_by_rfc2822)
+                                    sort_by_rfc2822,
+                                    flatten_user_response)
 
 
 def test_email_datestring_to_datetime():
@@ -67,5 +69,57 @@ def test_sort_by_rfc2822():
 
     for test_case in test_cases:
         result = sort_by_rfc2822(data=test_case['case'], sort_key=test_case['sort_key'])
+
+        assert test_case['expected'] == result
+
+
+def test_flatten_user_response():
+    test_cases = [
+        {'case': {
+            'keys': {
+                'sid': 'pid1234',
+                'cookie': 'cookie1234',
+                'email': 'random.user@bytecode.io'
+                },
+            'vars': None,
+            'lists': {
+                'my-user-list': 'Wed, 24 Mar 2021 14:25:42 -0400'
+                },
+            'engagement': 'disengaged',
+            'optout_email': 'none'},
+        'expected': {
+            'user_id': 'pid1234',
+            'cookie': 'cookie1234',
+            'email': 'random.user@bytecode.io',
+            'vars': None,
+            'lists': ['my-user-list'],
+            'engagement': 'disengaged',
+            'optout_email': 'none',
+            }
+        },
+        {'case': {
+            'keys': {
+                'sid': None,
+                'cookie': None,
+                'email': None,
+            },
+            'vars': None,
+            'lists': {},
+            'engagement': None,
+            'optout_email': None},
+        'expected': {
+            'user_id': None,
+            'cookie': None,
+            'email': None,
+            'vars': None,
+            'lists': [],
+            'engagement': None,
+            'optout_email': None,
+            }
+        },
+    ]
+
+    for test_case in test_cases:
+        result = flatten_user_response(test_case['case'])
 
         assert test_case['expected'] == result
