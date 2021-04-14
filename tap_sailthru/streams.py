@@ -9,7 +9,8 @@ from tap_sailthru import transform
 
 from tap_sailthru.transform import (email_datestring_to_datetime,
                                     get_start_and_end_date_params,
-                                    sort_by_rfc2822)
+                                    sort_by_rfc2822,
+                                    flatten_user_response)
 
 LOGGER = singer.get_logger()
 
@@ -31,6 +32,7 @@ class BaseStream:
 
     def set_parameters(self, params):
         self.params = params
+
 
     def get_data_for_children(self):
         raise NotImplementedError("Implementation required for streams with children")
@@ -200,7 +202,8 @@ class ListUsers(FullTableStream):
     parent = Lists
 
     def get_data_for_children(self):
-        pass
+
+        return self.get_records()
 
     def get_records(self, options=None):
 
@@ -225,6 +228,14 @@ class Users(FullTableStream):
         'id': '{user_id}',
         'key': 'sid',
     }
+    parent = ListUsers
+
+    def get_records(self, options):
+
+        for record in self.get_parent_data():
+            user_id = record['Profile Id']
+            response = self.client.get_user(user_id).get_body()
+            yield flatten_user_response(response)
 
 
 class PurchaseLog(FullTableStream):
