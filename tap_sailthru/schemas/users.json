@@ -4,31 +4,23 @@
     "object"
   ],
   "properties": {
-    "keys": {
+    "user_id": {
       "type": [
         "null",
-        "object"
-      ],
-      "properties": {
-        "sid": {
-          "type": [
-            "null",
-            "string"
-          ]
-        },
-        "cookie": {
-          "type": [
-            "null",
-            "string"
-          ]
-        },
-        "email": {
-          "type": [
-            "null",
-            "string"
-          ]
-        }
-      }
+        "string"
+      ]
+    },
+    "cookie": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "email": {
+      "type": [
+        "null",
+        "string"
+      ]
     },
     "vars": {
       "type": [
@@ -38,9 +30,14 @@
     "lists": {
       "type": [
         "null",
-        "object"
+        "array"
       ],
-      "additionalProperties": true
+      "items": {
+        "type": [
+          "null",
+          "string"
+        ]
+      }
     },
     "engagement": {
       "type": [
