@@ -5,7 +5,7 @@ from typing import List
 import singer
 
 
-def email_datestring_to_datetime(datestring: str) -> datetime:
+def rfc2822_to_datetime(datestring: str) -> datetime:
     """
     Takes in a date string in RFC 2822 format and parses it into datetime.
 
@@ -59,7 +59,7 @@ def sort_by_rfc2822(data: List[dict], sort_key) -> List[dict]:
     :param sort_key: the name of the field containing an RFC 2822 formatted date
     :return: a list of dictionaries sorted in ascending order by their RFC 2822 date
     """
-    return sorted(data, key=lambda row: email_datestring_to_datetime(row[sort_key]))
+    return sorted(data, key=lambda row: rfc2822_to_datetime(row[sort_key]))
 
 
 def flatten_user_response(response: dict) -> dict:

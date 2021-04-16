@@ -1,16 +1,12 @@
 import csv
 import time
-from abc import abstractmethod
-from datetime import datetime
 
 import requests
 import singer
-from tap_sailthru import transform
 
-from tap_sailthru.transform import (email_datestring_to_datetime,
+from tap_sailthru.transform import (flatten_user_response,
                                     get_start_and_end_date_params,
-                                    sort_by_rfc2822,
-                                    flatten_user_response)
+                                    rfc2822_to_datetime, sort_by_rfc2822)
 
 LOGGER = singer.get_logger()
 
@@ -80,7 +76,7 @@ class IncrementalStream(BaseStream):
         start_time = singer.get_bookmark(state, self.tap_stream_id, self.replication_key, config['start_date'])
         max_record_value = start_time
         for record in self.get_records():
-            record_replication_value = email_datestring_to_datetime(record[self.replication_key])
+            record_replication_value = rfc2822_to_datetime(record[self.replication_key])
             if record_replication_value > singer.utils.strptime_to_utc(max_record_value):
                 singer.write_record(
                     self.tap_stream_id,

@@ -1,20 +1,18 @@
 import datetime
-from tap_sailthru.sailthru_http import flatten_nested_hash
 
 import pytz
 
-from tap_sailthru.transform import (email_datestring_to_datetime,
-                                    _format_date_for_job_params,
+from tap_sailthru.transform import (_format_date_for_job_params,
+                                    flatten_user_response,
                                     get_start_and_end_date_params,
-                                    sort_by_rfc2822,
-                                    flatten_user_response)
+                                    rfc2822_to_datetime, sort_by_rfc2822)
 
 
-def test_email_datestring_to_datetime():
+def test_rfc2822_to_datetime():
     datestring = 'Wed, 31 Mar 2021 22:15:07 -0400'
     expected = datetime.datetime(2021, 4, 1, 2, 15, 7, tzinfo=pytz.utc)
 
-    result = email_datestring_to_datetime(datestring)
+    result = rfc2822_to_datetime(datestring)
 
     assert expected == result
 
