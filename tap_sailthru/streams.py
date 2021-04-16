@@ -23,12 +23,11 @@ class BaseStream:
     def __init__(self, client):
         self.client = client
 
-    def get_records(self, options=None):
+    def get_records(self, config=None):
         raise NotImplementedError("Child classes of BaseStream require `get_records` implementation")
 
     def set_parameters(self, params):
         self.params = params
-
 
     def get_data_for_children(self):
         raise NotImplementedError("Implementation required for streams with children")
@@ -98,11 +97,7 @@ class FullTableStream(BaseStream):
 
     def sync(self, state, stream_schema, stream_metadata, config, transformer):
 
-        options = {
-            'config': config,
-        }
-
-        for record in self.get_records(options=options):
+        for record in self.get_records(config):
             transformed_record = transformer.transform(record, stream_schema, stream_metadata)
             singer.write_record(self.tap_stream_id, transformed_record)
 
@@ -114,7 +109,7 @@ class AdTargeterPlans(FullTableStream):
     tap_stream_id = 'ad_targeter_plans'
     key_properties = ['plan_id']
 
-    def get_records(self, options=None):
+    def get_records(self, config=None):
         response = self.client.get_ad_targeter_plans().get_body()
         yield from response['ad_plans']
 
@@ -128,7 +123,7 @@ class Blasts(IncrementalStream):
         'statuses': ['sent', 'sending', 'unscheduled', 'scheduled'],
     }
 
-    def get_records(self, options=None):
+    def get_records(self, config=None):
         for status in self.params['statuses']:
             response = self.client.get_blasts(status).get_body()
             yield from response['blasts']
@@ -152,7 +147,7 @@ class BlastQuery(FullTableStream):
     }
     parent = Blasts
 
-    def get_records(self, options=None):
+    def get_records(self, config=None):
 
         for blast_id in self.get_parent_data():
             params = {
@@ -186,7 +181,7 @@ class BlastRepeats(IncrementalStream):
     replication_key = 'modify_time'
     valid_replication_keys = ['modify_time']
 
-    def get_records(self, options=None):
+    def get_records(self, config=None):
         response = self.client.get_blast_repeats().get_body()
         repeats = response['repeats']
         # Sort repeats by 'modify_time' field
@@ -198,7 +193,7 @@ class Lists(FullTableStream):
     tap_stream_id = 'lists'
     key_properties = ['list_id']
 
-    def get_records(self, options=None):
+    def get_records(self, config=None):
         response = self.client.get_lists().get_body()
         yield from response['lists']
 
@@ -221,7 +216,7 @@ class ListUsers(FullTableStream):
 
         return self.get_records()
 
-    def get_records(self, options=None):
+    def get_records(self, config=None):
 
         for list_name in self.get_parent_data():
             params = {
@@ -263,18 +258,16 @@ class PurchaseLog(FullTableStream):
         'end_date': '{purchase_log_end_date}',
     }
 
-    def get_records(self, options=None):
+    def get_records(self, config=None):
 
-        if options:
-            config = options.get('config')
-            datestring = config.get('start_date')
-            start_date, end_date = get_start_and_end_date_params(datestring)
+        datestring = config.get('start_date')
+        start_date, end_date = get_start_and_end_date_params(datestring)
 
-            params = {
-                'job': 'export_purchase_log',
-                'start_date': start_date,
-                'end_date': end_date,
-            }
+        params = {
+            'job': 'export_purchase_log',
+            'start_date': start_date,
+            'end_date': end_date,
+        }
 
         self.set_parameters(params)
         response = self.post_job(parameter=(params['start_date'], params['end_date']))
