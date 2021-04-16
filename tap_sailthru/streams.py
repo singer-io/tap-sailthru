@@ -149,7 +149,7 @@ class Blasts(IncrementalStream):
 
 class BlastQuery(FullTableStream):
     tap_stream_id = 'blast_query'
-    key_properties = ['user_id']
+    key_properties = ['profile_id']
     params = {
         'job': 'blast_query',
         'blast_id': '{blast_id}',
