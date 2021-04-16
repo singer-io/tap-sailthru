@@ -2,8 +2,8 @@
 
 import hashlib
 
-from .sailthru_error import SailthruClientError
-from .sailthru_http import sailthru_http_request
+from .error import SailthruClientError
+from .http import sailthru_http_request
 
 try:
     import simplejson as json

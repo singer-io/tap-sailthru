@@ -1,7 +1,7 @@
 import singer
 from singer import Transformer, metadata
 
-from tap_sailthru.sailthru_client import SailthruClient
+from tap_sailthru.client import SailthruClient
 from tap_sailthru.streams import STREAMS
 
 LOGGER = singer.get_logger()

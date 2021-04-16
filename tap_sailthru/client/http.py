@@ -2,8 +2,8 @@
 
 import platform
 import requests
-from .sailthru_error import SailthruClientError
-from .sailthru_response import SailthruResponse
+from .error import SailthruClientError
+from .response import SailthruResponse
 
 def flatten_nested_hash(hash_table):
     """
