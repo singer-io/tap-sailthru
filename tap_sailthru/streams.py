@@ -133,35 +133,55 @@ class Blasts(IncrementalStream):
     }
 
     def get_records(self, options=None):
-        # TODO: function not looping through all statuses
         for status in self.params['statuses']:
-            # TODO: handle non 200 responses
             response = self.client.get_blasts(status).get_body()
             yield from response['blasts']
 
+    def get_data_for_children(self):
+        blast_ids = []
+        for status in self.params['statuses']:
+            response = self.client.get_blasts(status).get_body()
+            ids = [blast.get('blast_id') for blast in response['blasts']]
+            blast_ids.extend(ids)
 
-class BlastRecipients(FullTableStream):
-    tap_stream_id = 'blast_recipients'
+        yield from blast_ids
+
+
+class BlastQuery(FullTableStream):
+    tap_stream_id = 'blast_query'
     key_properties = ['user_id']
     params = {
         'job': 'blast_query',
         'blast_id': '{blast_id}',
     }
+    parent = Blasts
 
     def get_records(self, options=None):
-        # TODO: hardcoding for now
-        params = {
-            'job': 'blast_query',
-            'blast_id': 23302084,
-        }
 
-        self.set_parameters(params)
-        # TODO: hardcoding id for now
-        response = self.post_job(parameter=params['blast_id'])
-        export_url = self.get_job_url(job_id=response['job_id'])
-        LOGGER.info(f'export_url: {export_url}')
+        for blast_id in self.get_parent_data():
+            params = {
+                'job': 'blast_query',
+                'blast_id': blast_id,
+            }
 
-        yield from self.process_job_csv(export_url=export_url)
+            self.set_parameters(params)
+            response = self.post_job(parameter=params['blast_id'])
+            try:
+                export_url = self.get_job_url(job_id=response['job_id'])
+            except Exception as e:
+                if response.get("error"):
+                    # https://getstarted.sailthru.com/developers/api/job/#Error_Codes
+                    # Error code 99 = You may not export a blast that has been sent
+                    if response.get("error") == 99:
+                        LOGGER.warn(f"{response.get('errormsg')}")
+                        LOGGER.info(f"Skipping blast_id: {params['blast_id']}")
+                        continue
+                    else:
+                        LOGGER.exception(e)
+                        raise e
+            LOGGER.info(f'export_url: {export_url}')
+
+            yield from self.process_job_csv(export_url=export_url)
 
 
 class BlastRepeats(IncrementalStream):
@@ -282,7 +302,7 @@ class Purchases(IncrementalStream):
 STREAMS = {
     'ad_targeter_plans': AdTargeterPlans,
     'blasts': Blasts,
-    'blast_recipients': BlastRecipients,
+    'blast_query': BlastQuery,
     'blast_repeats': BlastRepeats,
     'lists': Lists,
     'list_users': ListUsers,
