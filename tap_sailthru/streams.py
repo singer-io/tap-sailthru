@@ -1,4 +1,6 @@
 import csv
+from logging import Logger
+from sys import exc_info
 import time
 
 import requests
@@ -29,12 +31,12 @@ class BaseStream:
     def set_parameters(self, params):
         self.params = params
 
-    def get_data_for_children(self):
+    def get_data_for_children(self, config=None):
         raise NotImplementedError("Implementation required for streams with children")
 
-    def get_parent_data(self):
+    def get_parent_data(self, config=None):
         parent = self.parent(self.client)
-        return parent.get_data_for_children()
+        return parent.get_data_for_children(config)
 
     def post_job(self, parameter=None):
         job_name = self.params.get('job')
@@ -67,6 +69,7 @@ class BaseStream:
 
 class IncrementalStream(BaseStream):
     replication_method = 'INCREMENTAL'
+    batched = False
 
     def __init__(self, client):
         super().__init__(client)
@@ -74,13 +77,20 @@ class IncrementalStream(BaseStream):
     def sync(self, state, stream_schema, stream_metadata, config, transformer):
         start_time = singer.get_bookmark(state, self.tap_stream_id, self.replication_key, config['start_date'])
         max_record_value = start_time
-        for record in self.get_records():
+        for record in self.get_records(config):
             record_replication_value = rfc2822_to_datetime(record[self.replication_key])
-            if record_replication_value > singer.utils.strptime_to_utc(max_record_value):
-                singer.write_record(
-                    self.tap_stream_id,
-                    record,
-                )
+            if self.batched:
+                if record_replication_value >= singer.utils.strptime_to_utc(max_record_value):
+                    singer.write_record(
+                        self.tap_stream_id,
+                        record,
+                    )
+            else:
+                if record_replication_value > singer.utils.strptime_to_utc(max_record_value):
+                    singer.write_record(
+                        self.tap_stream_id,
+                        record,
+                    )
                 # TODO: ensure results are ordered
                 max_record_value = record_replication_value.isoformat()
 
@@ -258,6 +268,9 @@ class PurchaseLog(FullTableStream):
         'end_date': '{purchase_log_end_date}',
     }
 
+    def get_data_for_children(self, config):
+        return self.get_records(config)
+
     def get_records(self, config=None):
 
         datestring = config.get('start_date')
@@ -286,7 +299,24 @@ class Purchases(IncrementalStream):
         'purchase_id': '{purchase_id}',
         'purchase_key': 'sid',
     }
+    parent = PurchaseLog
+    batched = True
 
+    def get_records(self, config=None):
+
+        for record in self.get_parent_data(config):
+            purchase_id = record.get("Extid")
+            # TODO: figure out what to do if extid doesn't exist
+            if not purchase_id:
+                continue
+            response = self.client.get_purchase(purchase_id, purchase_key='extid').get_body()
+
+            if response.get("error"):
+                LOGGER.info(f"record: {record}")
+                LOGGER.info(f"purchase_id: {purchase_id}")
+                LOGGER.info(f"response: {response}")
+
+            yield response
 
 STREAMS = {
     'ad_targeter_plans': AdTargeterPlans,
