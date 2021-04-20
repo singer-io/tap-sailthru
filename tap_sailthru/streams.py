@@ -1,9 +1,10 @@
 import csv
 import time
-from typing import Any, Generator, Iterator
+from typing import Any, Iterator
 
 import requests
 import singer
+from singer import Transformer
 
 from tap_sailthru.client import SailthruClient
 from tap_sailthru.transform import (flatten_user_response,
@@ -30,12 +31,12 @@ class BaseStream:
     def __init__(self, client: SailthruClient):
         self.client = client
 
-    def get_records(self, config: dict = None, for_child_stream: bool = False) -> list:
+    def get_records(self, config: dict = None, is_parent: bool = False) -> list:
         """
         Returns a list of records for that stream.
 
         :param config: The tap config file
-        :param for_child_stream: If true, may change the type of data
+        :param is_parent: If true, may change the type of data
             that is returned for a child stream to consume
         :return: list of records
         """
@@ -57,7 +58,7 @@ class BaseStream:
         :return: A list of records
         """
         parent = self.parent(self.client)
-        return parent.get_records(config, for_child_stream=True)
+        return parent.get_records(config, is_parent=True)
 
     def post_job(self, parameter: Any = None) -> dict:
         """
@@ -108,22 +109,39 @@ class BaseStream:
 
 
 class IncrementalStream(BaseStream):
+    """
+    A child class of a base stream used to represent streams that use the
+    INCREMENTAL replication method.
+
+    :param client: The API client used extract records from the external source
+    """
     replication_method = 'INCREMENTAL'
     batched = False
 
     def __init__(self, client):
         super().__init__(client)
 
-    def sync(self, state, stream_schema, stream_metadata, config, transformer):
+    def sync(self, state: dict, stream_schema: dict, stream_metadata: dict, config: dict, transformer: Transformer) -> dict:
+        """
+        The sync logic for an incremental stream.
+
+        :param state: A dictionary representing singer state
+        :param stream_schema: A dictionary containing the stream schema
+        :param stream_metadata: A dictionnary containing stream metadata
+        :param config: A dictionary containing tap config data
+        :param transformer: A singer Transformer object
+        :return: State data in the form of a dictionary
+        """
         start_time = singer.get_bookmark(state, self.tap_stream_id, self.replication_key, config['start_date'])
         max_record_value = start_time
         for record in self.get_records(config):
-            record_replication_value = rfc2822_to_datetime(record[self.replication_key])
+            transformed_record = transformer.transform(record, stream_schema, stream_metadata)
+            record_replication_value = rfc2822_to_datetime(transformed_record[self.replication_key])
             if self.batched:
                 if record_replication_value >= singer.utils.strptime_to_utc(max_record_value):
                     singer.write_record(
                         self.tap_stream_id,
-                        record,
+                        transformed_record,
                     )
             else:
                 if record_replication_value > singer.utils.strptime_to_utc(max_record_value):
@@ -140,13 +158,28 @@ class IncrementalStream(BaseStream):
 
 
 class FullTableStream(BaseStream):
+    """
+    A child class of a base stream used to represent streams that use the
+    FULL_TABLE replication method.
+
+    :param client: The API client used extract records from the external source
+    """
     replication_method = 'FULL_TABLE'
 
     def __init__(self, client):
         super().__init__(client)
 
-    def sync(self, state, stream_schema, stream_metadata, config, transformer):
+    def sync(self, state: dict, stream_schema: dict, stream_metadata: dict, config: dict, transformer: Transformer) -> dict:
+        """
+        The sync logic for an full table stream.
 
+        :param state: A dictionary representing singer state
+        :param stream_schema: A dictionary containing the stream schema
+        :param stream_metadata: A dictionnary containing stream metadata
+        :param config: A dictionary containing tap config data
+        :param transformer: A singer Transformer object
+        :return: State data in the form of a dictionary
+        """
         for record in self.get_records(config):
             transformed_record = transformer.transform(record, stream_schema, stream_metadata)
             singer.write_record(self.tap_stream_id, transformed_record)
@@ -156,6 +189,11 @@ class FullTableStream(BaseStream):
 
 
 class AdTargeterPlans(FullTableStream):
+    """
+    Gets records for Sailthru Ad Targeter Plans.
+
+    Docs: https://getstarted.sailthru.com/developers/api/ad-plan/
+    """
     tap_stream_id = 'ad_targeter_plans'
     key_properties = ['plan_id']
 
@@ -165,6 +203,15 @@ class AdTargeterPlans(FullTableStream):
 
 
 class Blasts(IncrementalStream):
+    """
+    Gets records for blasts (aka Sailtrhu campaigns).
+
+    Docs: https://getstarted.sailthru.com/developers/api/blast/
+
+    This endpoint does not have a method of retrieving all blasts available.
+    You can only retrieve blast information by specifying a blast_id or you
+    can get all blasts by status type (sent, sending, scheduled, unscheduled).
+    """
     tap_stream_id = 'blasts'
     key_properties = ['blast_id']
     replication_key = 'modify_time'
@@ -174,6 +221,8 @@ class Blasts(IncrementalStream):
     }
 
     def get_records(self, config=None, for_child_sream=False):
+        # Will just return a list of blast_id if being called
+        # by child stream
         if for_child_sream:
             blast_ids = []
             for status in self.params['statuses']:
@@ -183,11 +232,18 @@ class Blasts(IncrementalStream):
 
             yield from blast_ids
         else:
+            # TODO: Need to figure out how to sort these
             for status in self.params['statuses']:
                 response = self.client.get_blasts(status).get_body()
                 yield from response['blasts']
 
 class BlastQuery(FullTableStream):
+    """
+    Triggers asynchronous data export job for blasts and then fetches the
+    records when the job is done.
+
+    Docs: https://getstarted.sailthru.com/developers/api/job/#blast-query
+    """
     tap_stream_id = 'blast_query'
     key_properties = ['profile_id']
     params = {
@@ -225,6 +281,11 @@ class BlastQuery(FullTableStream):
 
 
 class BlastRepeats(IncrementalStream):
+    """
+    Gets all recurring campaigns.
+
+    Docs: https://getstarted.sailthru.com/developers/api/blast_repeat/
+    """
     tap_stream_id = 'blast_repeats'
     key_properties = ['repeat_id']
     replication_key = 'modify_time'
@@ -240,11 +301,18 @@ class BlastRepeats(IncrementalStream):
 
 
 class Lists(FullTableStream):
+    """
+    Retrieves info for Sailthru lists.
+
+    Docs: https://getstarted.sailthru.com/developers/api/list/
+    """
     tap_stream_id = 'lists'
     key_properties = ['list_id']
 
-    def get_records(self, config=None, for_child_stream=False):
-        if for_child_stream:
+    # TODO: might be good candiate for lru
+    def get_records(self, config=None, is_parent=False):
+        # Will just return list names if called by child stream
+        if is_parent:
             response = self.client.get_lists().get_body()
             for list in response['lists']:
                 yield list['name']
@@ -254,6 +322,12 @@ class Lists(FullTableStream):
 
 
 class BlastSaveList(FullTableStream):
+    """
+    Triggers asynchronous data export job for blast_save_query and then
+    fetches the records when the job is done.
+
+    Docs: https://getstarted.sailthru.com/developers/api/job/#blast-save-list
+    """
     tap_stream_id = 'list_users'
     key_properties = ['user_id']
     params = {
@@ -262,7 +336,7 @@ class BlastSaveList(FullTableStream):
     }
     parent = Lists
 
-    def get_records(self, config=None, for_child_stream=False):
+    def get_records(self, config=None, is_parent=False):
 
         for list_name in self.get_parent_data():
             params = {
@@ -279,6 +353,11 @@ class BlastSaveList(FullTableStream):
 
 
 class Users(FullTableStream):
+    """
+    Retrieve user profile data.
+
+    Docs: https://getstarted.sailthru.com/developers/api/user/
+    """
     tap_stream_id = 'users'
     key_properties = ['user_id']
     params = {
@@ -296,6 +375,12 @@ class Users(FullTableStream):
 
 
 class PurchaseLog(FullTableStream):
+    """
+    Triggers asynchronous data export job for export_purchase_log and then
+    fetches the records when the job is done.
+
+    Docs: https://getstarted.sailthru.com/developers/api/job/#export-purchase-log
+    """
     tap_stream_id = 'purchase_log'
     key_properties = ['purchase_id']
     params = {
@@ -304,7 +389,7 @@ class PurchaseLog(FullTableStream):
         'end_date': '{purchase_log_end_date}',
     }
 
-    def get_records(self, config=None, for_child_stream=False):
+    def get_records(self, config=None, is_parent=False):
 
         datestring = config.get('start_date')
         start_date, end_date = get_start_and_end_date_params(datestring)
@@ -324,6 +409,11 @@ class PurchaseLog(FullTableStream):
 
 
 class Purchases(IncrementalStream):
+    """
+    Retrieve data on a purchase by the purchase key type (sid vs extid).
+
+    Docs: https://getstarted.sailthru.com/developers/api/purchase/
+    """
     tap_stream_id = 'purchases'
     key_properties = ['item_id']
     replication_key = 'time'
