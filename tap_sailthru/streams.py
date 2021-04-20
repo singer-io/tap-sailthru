@@ -1,11 +1,11 @@
 import csv
-from logging import Logger
-from sys import exc_info
 import time
+from typing import Any, Generator
 
 import requests
 import singer
 
+from tap_sailthru.client import SailthruClient
 from tap_sailthru.transform import (flatten_user_response,
                                     get_start_and_end_date_params,
                                     rfc2822_to_datetime, sort_by_rfc2822)
@@ -13,6 +13,11 @@ from tap_sailthru.transform import (flatten_user_response,
 LOGGER = singer.get_logger()
 
 class BaseStream:
+    """
+    A base class representing singer streams.
+
+    :param client: The API client used extract records from the external source
+    """
     object_type = None
     tap_stream_id = None
     replication_method = None
@@ -22,23 +27,53 @@ class BaseStream:
     params = {}
     parent = None
 
-    def __init__(self, client):
+    def __init__(self, client: SailthruClient):
         self.client = client
 
-    def get_records(self, config=None):
+    def get_records(self, config: dict = None) -> list:
+        """
+        Returns a list of records for that stream.
+
+        :param config: The tap config file
+        :return: list of records
+        """
         raise NotImplementedError("Child classes of BaseStream require `get_records` implementation")
 
-    def set_parameters(self, params):
+    def set_parameters(self, params: dict) -> None:
+        """
+        Sets or updates the `params` attribute of a class.
+
+        :param params: Dictionary of parameters to set or update the class with
+        """
         self.params = params
 
-    def get_data_for_children(self, config=None):
+    def get_data_for_children(self, config: dict = None) -> list:
+        """
+        Returns a list of records to be consumed by child streams.
+
+        :param config: The tap config file
+        :return: A list of records
+        """
         raise NotImplementedError("Implementation required for streams with children")
 
-    def get_parent_data(self, config=None):
+    def get_parent_data(self, config: dict = None) -> list:
+        """
+        Returns a list of records from the parent stream.
+
+        :param config: The tap config file
+        :return: A list of records
+        """
         parent = self.parent(self.client)
         return parent.get_data_for_children(config)
 
-    def post_job(self, parameter=None):
+    def post_job(self, parameter: Any = None) -> dict:
+        """
+        Creates a data export background job. More details:
+        https://getstarted.sailthru.com/developers/api/job/
+
+        :param parameter: Any parameter type to be passed to the logger
+        :return: The API response as a dictionary
+        """
         job_name = self.params.get('job')
         if parameter:
             LOGGER.info(f'Starting background job for {job_name}, parameter={parameter}')
@@ -47,7 +82,14 @@ class BaseStream:
         # TODO: handle non 200 responses
         return self.client.create_job(self.params).get_body()
 
-    def get_job_url(self, job_id):
+    def get_job_url(self, job_id: str) -> str:
+        """
+        Polls the /job endpoint and checks to see if export job is completed.
+        Returns the export URL when job is ready.
+
+        :param job_id: the job_id to poll
+        :return: the export URL
+        """
         status = ''
         while status != 'completed':
             response = self.client.get_job(job_id).get_body()
@@ -57,9 +99,14 @@ class BaseStream:
 
         return response.get('export_url')
 
-    def process_job_csv(self, export_url, chunk_size=1024):
+    @staticmethod
+    def process_job_csv(export_url: str, chunk_size: int = 1024) -> Generator[dict]:
         """
-        Fetches csv from URL and yields each line.
+        Fetches CSV from URL and streams each line.
+
+        :param export_url: The URL from which to fetch the CSV data from
+        :param chunk_size: The chunk size to read per line
+        :return: A generator of a dictionary
         """
         with requests.get(export_url, stream=True) as r:
             reader = csv.DictReader(line.decode('utf-8') for line in r.iter_lines(chunk_size=chunk_size))
@@ -207,7 +254,7 @@ class Lists(FullTableStream):
         response = self.client.get_lists().get_body()
         yield from response['lists']
 
-    def get_data_for_children(self):
+    def get_data_for_children(self, config=None):
         response = self.client.get_lists().get_body()
         for list in response['lists']:
             yield list['name']
@@ -222,7 +269,7 @@ class ListUsers(FullTableStream):
     }
     parent = Lists
 
-    def get_data_for_children(self):
+    def get_data_for_children(self, config=None):
 
         return self.get_records()
 
