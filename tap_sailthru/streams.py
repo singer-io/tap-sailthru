@@ -253,7 +253,7 @@ class Lists(FullTableStream):
             yield from response['lists']
 
 
-class ListUsers(FullTableStream):
+class BlastSaveList(FullTableStream):
     tap_stream_id = 'list_users'
     key_properties = ['user_id']
     params = {
@@ -285,7 +285,7 @@ class Users(FullTableStream):
         'id': '{user_id}',
         'key': 'sid',
     }
-    parent = ListUsers
+    parent = BlastSaveList
 
     def get_records(self, options):
 
@@ -357,7 +357,7 @@ STREAMS = {
     'blast_query': BlastQuery,
     'blast_repeats': BlastRepeats,
     'lists': Lists,
-    'list_users': ListUsers,
+    'blast_save_list': BlastSaveList,
     'users': Users,
     'purchase_log': PurchaseLog,
     'purchases': Purchases,
