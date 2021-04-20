@@ -287,7 +287,7 @@ class Users(FullTableStream):
     }
     parent = BlastSaveList
 
-    def get_records(self, options):
+    def get_records(self, config):
 
         for record in self.get_parent_data():
             user_id = record['Profile Id']
