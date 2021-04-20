@@ -1,6 +1,6 @@
 import csv
 import time
-from typing import Any, Generator
+from typing import Any, Generator, Iterator
 
 import requests
 import singer
@@ -30,11 +30,13 @@ class BaseStream:
     def __init__(self, client: SailthruClient):
         self.client = client
 
-    def get_records(self, config: dict = None) -> list:
+    def get_records(self, config: dict = None, for_child_stream: bool = False) -> list:
         """
         Returns a list of records for that stream.
 
         :param config: The tap config file
+        :param for_child_stream: If true, may change the type of data
+            that is returned for a child stream to consume
         :return: list of records
         """
         raise NotImplementedError("Child classes of BaseStream require `get_records` implementation")
@@ -47,15 +49,6 @@ class BaseStream:
         """
         self.params = params
 
-    def get_data_for_children(self, config: dict = None) -> list:
-        """
-        Returns a list of records to be consumed by child streams.
-
-        :param config: The tap config file
-        :return: A list of records
-        """
-        raise NotImplementedError("Implementation required for streams with children")
-
     def get_parent_data(self, config: dict = None) -> list:
         """
         Returns a list of records from the parent stream.
@@ -64,7 +57,7 @@ class BaseStream:
         :return: A list of records
         """
         parent = self.parent(self.client)
-        return parent.get_data_for_children(config)
+        return parent.get_records(config, for_child_stream=True)
 
     def post_job(self, parameter: Any = None) -> dict:
         """
@@ -100,7 +93,7 @@ class BaseStream:
         return response.get('export_url')
 
     @staticmethod
-    def process_job_csv(export_url: str, chunk_size: int = 1024) -> Generator[dict]:
+    def process_job_csv(export_url: str, chunk_size: int = 1024) -> Iterator[dict]:
         """
         Fetches CSV from URL and streams each line.
 
@@ -180,20 +173,19 @@ class Blasts(IncrementalStream):
         'statuses': ['sent', 'sending', 'unscheduled', 'scheduled'],
     }
 
-    def get_records(self, config=None):
-        for status in self.params['statuses']:
-            response = self.client.get_blasts(status).get_body()
-            yield from response['blasts']
+    def get_records(self, config=None, for_child_sream=False):
+        if for_child_sream:
+            blast_ids = []
+            for status in self.params['statuses']:
+                response = self.client.get_blasts(status).get_body()
+                ids = [blast.get('blast_id') for blast in response['blasts']]
+                blast_ids.extend(ids)
 
-    def get_data_for_children(self):
-        blast_ids = []
-        for status in self.params['statuses']:
-            response = self.client.get_blasts(status).get_body()
-            ids = [blast.get('blast_id') for blast in response['blasts']]
-            blast_ids.extend(ids)
-
-        yield from blast_ids
-
+            yield from blast_ids
+        else:
+            for status in self.params['statuses']:
+                response = self.client.get_blasts(status).get_body()
+                yield from response['blasts']
 
 class BlastQuery(FullTableStream):
     tap_stream_id = 'blast_query'
@@ -246,18 +238,19 @@ class BlastRepeats(IncrementalStream):
 
         yield from sorted_repeats
 
+
 class Lists(FullTableStream):
     tap_stream_id = 'lists'
     key_properties = ['list_id']
 
-    def get_records(self, config=None):
-        response = self.client.get_lists().get_body()
-        yield from response['lists']
-
-    def get_data_for_children(self, config=None):
-        response = self.client.get_lists().get_body()
-        for list in response['lists']:
-            yield list['name']
+    def get_records(self, config=None, for_child_stream=False):
+        if for_child_stream:
+            response = self.client.get_lists().get_body()
+            for list in response['lists']:
+                yield list['name']
+        else:
+            response = self.client.get_lists().get_body()
+            yield from response['lists']
 
 
 class ListUsers(FullTableStream):
@@ -269,11 +262,7 @@ class ListUsers(FullTableStream):
     }
     parent = Lists
 
-    def get_data_for_children(self, config=None):
-
-        return self.get_records()
-
-    def get_records(self, config=None):
+    def get_records(self, config=None, for_child_stream=False):
 
         for list_name in self.get_parent_data():
             params = {
@@ -315,10 +304,7 @@ class PurchaseLog(FullTableStream):
         'end_date': '{purchase_log_end_date}',
     }
 
-    def get_data_for_children(self, config):
-        return self.get_records(config)
-
-    def get_records(self, config=None):
+    def get_records(self, config=None, for_child_stream=False):
 
         datestring = config.get('start_date')
         start_date, end_date = get_start_and_end_date_params(datestring)
