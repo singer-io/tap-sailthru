@@ -2,3 +2,6 @@
 
 class SailthruClientError(Exception):
     pass
+
+class SailthruClient429Error(Exception):
+    pass

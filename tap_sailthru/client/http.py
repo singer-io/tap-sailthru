@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import backoff
 import platform
 import requests
-from .error import SailthruClientError
+from .error import SailthruClientError, SailthruClient429Error
 from .response import SailthruResponse
 
 def flatten_nested_hash(hash_table):
@@ -27,6 +28,7 @@ def flatten_nested_hash(hash_table):
         return f
     return flatten(hash_table, False)
 
+@backoff.on_exception(backoff.expo, SailthruClient429Error, max_tries=5, factor=2)
 def sailthru_http_request(url, data, method, file_data=None, headers=None, request_timeout=10):
     """
     Perform an HTTP GET / POST / DELETE request
@@ -42,6 +44,9 @@ def sailthru_http_request(url, data, method, file_data=None, headers=None, reque
         headers = sailthru_headers
     try:
         response = requests.request(method, url, params=params, data=data, files=file_data, headers=headers, timeout=request_timeout)
+
+        if response.status_code == 429:
+            raise SailthruClient429Error
         return SailthruResponse(response)
     except requests.HTTPError as e:
         raise SailthruClientError(str(e))
