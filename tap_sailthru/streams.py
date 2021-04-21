@@ -197,7 +197,7 @@ class AdTargeterPlans(FullTableStream):
     tap_stream_id = 'ad_targeter_plans'
     key_properties = ['plan_id']
 
-    def get_records(self, config=None):
+    def get_records(self, config=None, is_parent=False):
         response = self.client.get_ad_targeter_plans().get_body()
         yield from response['ad_plans']
 
@@ -220,10 +220,10 @@ class Blasts(IncrementalStream):
         'statuses': ['sent', 'sending', 'unscheduled', 'scheduled'],
     }
 
-    def get_records(self, config=None, for_child_sream=False):
+    def get_records(self, config=None, is_parent=False):
         # Will just return a list of blast_id if being called
         # by child stream
-        if for_child_sream:
+        if is_parent:
             blast_ids = []
             for status in self.params['statuses']:
                 response = self.client.get_blasts(status).get_body()
@@ -252,7 +252,7 @@ class BlastQuery(FullTableStream):
     }
     parent = Blasts
 
-    def get_records(self, config=None):
+    def get_records(self, config=None, is_parent=False):
 
         for blast_id in self.get_parent_data():
             params = {
@@ -291,7 +291,7 @@ class BlastRepeats(IncrementalStream):
     replication_key = 'modify_time'
     valid_replication_keys = ['modify_time']
 
-    def get_records(self, config=None):
+    def get_records(self, config=None, is_parent=False):
         response = self.client.get_blast_repeats().get_body()
         repeats = response['repeats']
         # Sort repeats by 'modify_time' field
@@ -425,7 +425,7 @@ class Purchases(IncrementalStream):
     parent = PurchaseLog
     batched = True
 
-    def get_records(self, config=None):
+    def get_records(self, config=None, is_parent=False):
 
         for record in self.get_parent_data(config):
             purchase_id = record.get("Extid")
