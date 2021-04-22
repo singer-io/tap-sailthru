@@ -4,93 +4,23 @@
     "object"
   ],
   "properties": {
-    "blast_id": {
-      "type": [
-        "null",
-        "integer"
-      ]
-    },
     "name": {
       "type": [
         "null",
         "string"
       ]
     },
-    "subject": {
+    "days": {
       "type": [
         "null",
-        "string"
-      ]
-    },
-    "list": {
-      "type": [
-        "null",
-        "string"
-      ]
-    },
-    "mode": {
-      "type": [
-        "null",
-        "string"
-      ]
-    },
-    "modify_user": {
-      "type": [
-        "null",
-        "string"
-      ]
-    },
-    "copy_template": {
-      "type": [
-        "null",
-        "string"
-      ]
-    },
-    "stats": {
-      "type": [
-        "null",
-        "object"
+        "array"
       ],
-      "properties": {
-        "total": {
-          "type": [
-            "null",
-            "object"
-          ],
-          "properties": {
-            "count": {
-              "type": [
-                "null",
-                "integer"
-              ]
-            },
-            "beacon_noclick": {
-              "type": [
-                "null",
-                "integer"
-              ]
-            },
-            "open_total": {
-              "type": [
-                "null",
-                "integer"
-              ]
-            },
-            "pv": {
-              "type": [
-                "null",
-                "integer"
-              ]
-            }
-          }
-        }
+      "items": {
+        "type": [
+          "null",
+          "string"
+        ]
       }
-    },
-    "sent_count": {
-      "type": [
-        "null",
-        "integer"
-      ]
     },
     "status": {
       "type": [
@@ -98,7 +28,17 @@
         "string"
       ]
     },
-    "start_time": {
+    "previous_blast_id": {
+      "type": [
+        "null"
+      ]
+    },
+    "message_criteria": {
+      "type": [
+        "null"
+      ]
+    },
+    "create_time": {
       "type": [
         "null",
         "string"
@@ -110,22 +50,117 @@
         "string"
       ]
     },
-    "schedule_time": {
+    "create_user": {
       "type": [
         "null",
         "string"
       ]
     },
-    "email_count": {
+    "modify_user": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "list": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "generate_time": {
       "type": [
         "null",
         "integer"
       ]
     },
-    "data_feed_url": {
+    "suppress_list": {
+      "type": [
+        "null"
+      ]
+    },
+    "template": {
       "type": [
         "null",
         "string"
+      ]
+    },
+    "template_id": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "send_time": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "start_date": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "end_date": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "report_email": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "seed_emails": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "error_time": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "errors": {
+      "type": [
+        "null",
+        "array"
+      ],
+      "items": {
+        "type": [
+          "null",
+          "string"
+        ]
+      }
+    },
+    "repeat_id": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "days_month": {
+      "type": [
+        "null",
+        "array"
+      ],
+      "items": {
+        "type": [
+          "null",
+          "integer"
+        ]
+      }
+    },
+    "is_static": {
+      "type": [
+        "null",
+        "boolean"
       ]
     }
   }
