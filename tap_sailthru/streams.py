@@ -232,9 +232,16 @@ class Blasts(IncrementalStream):
             yield from blast_ids
         else:
             # TODO: Need to figure out how to sort these
+            blasts = []
             for status in self.params['statuses']:
                 response = self.client.get_blasts(status).get_body()
-                yield from response['blasts']
+                # Add the blast status to each blast record
+                response['blasts'] = [dict(item, status=status) for item in response['blasts']]
+                blasts += response['blasts']
+
+            sorted_blasts = sort_by_rfc2822(blasts, 'modify_time')
+
+            yield from sorted_blasts
 
 class BlastQuery(FullTableStream):
     """
