@@ -79,3 +79,17 @@ def flatten_user_response(response: dict) -> dict:
         'engagement': response.get('engagement'),
         'optout_email': response.get('optout_email'),
     }
+
+
+def advance_date_by_microsecond(date: str) -> str:
+    """
+    Adds a microsecond to the date.
+
+    :param date: The date string to add a microsecond to
+    :return: A new date string with an added microsecond
+    """
+
+    mu = datetime.timedelta(microseconds=1)
+    new_dt = singer.utils.strptime_to_utc(date) + mu
+
+    return singer.utils.strftime(new_dt)
