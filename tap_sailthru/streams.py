@@ -4,7 +4,7 @@ from typing import Any, Iterator
 
 import requests
 import singer
-from singer import Transformer
+from singer import Transformer, metrics
 
 from tap_sailthru.client import SailthruClient
 from tap_sailthru.transform import (flatten_user_response,
@@ -134,23 +134,22 @@ class IncrementalStream(BaseStream):
         """
         start_time = singer.get_bookmark(state, self.tap_stream_id, self.replication_key, config['start_date'])
         max_record_value = start_time
-        for record in self.get_records(config):
-            transformed_record = transformer.transform(record, stream_schema, stream_metadata)
-            record_replication_value = rfc2822_to_datetime(transformed_record[self.replication_key])
-            if self.batched:
-                if record_replication_value >= singer.utils.strptime_to_utc(max_record_value):
-                    singer.write_record(
-                        self.tap_stream_id,
-                        transformed_record,
-                    )
-            else:
-                if record_replication_value > singer.utils.strptime_to_utc(max_record_value):
-                    singer.write_record(
-                        self.tap_stream_id,
-                        record,
-                    )
-                # TODO: ensure results are ordered
-                max_record_value = record_replication_value.isoformat()
+
+        with metrics.record_counter(self.tap_stream_id) as counter:
+            for record in self.get_records(config):
+                transformed_record = transformer.transform(record, stream_schema, stream_metadata)
+                record_replication_value = rfc2822_to_datetime(transformed_record[self.replication_key])
+                # TODO: fix this?
+                if self.batched:
+                    if record_replication_value >= singer.utils.strptime_to_utc(max_record_value):
+                        singer.write_record(self.tap_stream_id, transformed_record)
+                        counter.increment()
+                else:
+                    if record_replication_value > singer.utils.strptime_to_utc(max_record_value):
+                        singer.write_record(self.tap_stream_id, transformed_record)
+                        counter.increment()
+                    # TODO: ensure results are ordered
+                    max_record_value = record_replication_value.isoformat()
 
         state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, max_record_value)
         singer.write_state(state)
@@ -180,9 +179,11 @@ class FullTableStream(BaseStream):
         :param transformer: A singer Transformer object
         :return: State data in the form of a dictionary
         """
-        for record in self.get_records(config):
-            transformed_record = transformer.transform(record, stream_schema, stream_metadata)
-            singer.write_record(self.tap_stream_id, transformed_record)
+        with metrics.record_counter(self.tap_stream_id) as counter:
+            for record in self.get_records(config):
+                transformed_record = transformer.transform(record, stream_schema, stream_metadata)
+                singer.write_record(self.tap_stream_id, transformed_record)
+                counter.increment()
 
         singer.write_state(state)
         return state

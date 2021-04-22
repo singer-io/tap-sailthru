@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import backoff
 import platform
+
+import backoff
 import requests
-from .error import SailthruClientError, SailthruClient429Error
+from singer import metrics
+
+from .error import SailthruClient429Error, SailthruClientError, SailthruServer5xxError
 from .response import SailthruResponse
+
 
 def flatten_nested_hash(hash_table):
     """
@@ -43,11 +47,17 @@ def sailthru_http_request(url, data, method, file_data=None, headers=None, reque
     else:
         headers = sailthru_headers
     try:
-        response = requests.request(method, url, params=params, data=data, files=file_data, headers=headers, timeout=request_timeout)
+        with metrics.http_request_timer(url) as timer:
+            response = requests.request(method, url, params=params, data=data, files=file_data, headers=headers, timeout=request_timeout)
+            timer.tags[metrics.Tag.http_status_code] = response.status_code
 
         if response.status_code == 429:
             raise SailthruClient429Error
+        elif response.status_code >= 500:
+            raise SailthruServer5xxError
+
         return SailthruResponse(response)
+
     except requests.HTTPError as e:
         raise SailthruClientError(str(e))
     except requests.RequestException as e:
