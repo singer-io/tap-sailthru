@@ -5,9 +5,10 @@ from typing import Any, Iterator
 import requests
 import singer
 from singer import Transformer, metrics
+from singer.utils import strftime
 
 from tap_sailthru.client import SailthruClient
-from tap_sailthru.transform import (flatten_user_response,
+from tap_sailthru.transform import (advance_date_by_microsecond, flatten_user_response,
                                     get_start_and_end_date_params,
                                     rfc2822_to_datetime, sort_by_rfc2822)
 
@@ -133,22 +134,19 @@ class IncrementalStream(BaseStream):
         :return: State data in the form of a dictionary
         """
         start_time = singer.get_bookmark(state, self.tap_stream_id, self.replication_key, config['start_date'])
+        # Since records can contain the same 'modify_time' timestamp due to batch uploads
+        # we need to use >= to compare and write records and in order to avoid re-syncing
+        # records from the previous run, we add a microsecond to the start date
+        start_time = advance_date_by_microsecond(start_time)
         max_record_value = start_time
 
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in self.get_records(config):
                 transformed_record = transformer.transform(record, stream_schema, stream_metadata)
                 record_replication_value = rfc2822_to_datetime(transformed_record[self.replication_key])
-                # TODO: fix this?
-                if self.batched:
-                    if record_replication_value >= singer.utils.strptime_to_utc(max_record_value):
-                        singer.write_record(self.tap_stream_id, transformed_record)
-                        counter.increment()
-                else:
-                    if record_replication_value > singer.utils.strptime_to_utc(max_record_value):
-                        singer.write_record(self.tap_stream_id, transformed_record)
-                        counter.increment()
-                    # TODO: ensure results are ordered
+                if record_replication_value >= singer.utils.strptime_to_utc(max_record_value):
+                    singer.write_record(self.tap_stream_id, transformed_record)
+                    counter.increment()
                     max_record_value = record_replication_value.isoformat()
 
         state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, max_record_value)
@@ -433,6 +431,7 @@ class Purchases(IncrementalStream):
             # TODO: figure out what to do if extid doesn't exist
             if not purchase_id:
                 continue
+            # TODO: sort responses
             response = self.client.get_purchase(purchase_id, purchase_key='extid').get_body()
 
             if response.get("error"):
