@@ -424,7 +424,8 @@ class PurchaseLog(IncrementalStream):
             export_url = self.get_job_url(job_id=response['job_id'])
             LOGGER.info(f'export_url: {export_url}')
 
-            for record in self.process_job_csv(export_url=export_url):
+            records = sort_by_rfc2822(self.process_job_csv(export_url=export_url), 'Date')
+            for record in records:
                 # Purchase key could be Extid or Sid
                 purchase_key = get_purchase_key_type(record)
                 # Add purchase_key field
