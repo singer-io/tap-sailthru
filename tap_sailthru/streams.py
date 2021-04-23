@@ -8,7 +8,7 @@ from singer import Transformer, metrics
 from singer.utils import strftime
 
 from tap_sailthru.client import SailthruClient
-from tap_sailthru.transform import (advance_date_by_microsecond, flatten_user_response,
+from tap_sailthru.transform import (advance_date_by_microsecond, flatten_user_response, get_purchase_key_type,
                                     get_start_and_end_date_params,
                                     rfc2822_to_datetime, sort_by_rfc2822)
 
@@ -411,7 +411,13 @@ class PurchaseLog(FullTableStream):
         export_url = self.get_job_url(job_id=response['job_id'])
         LOGGER.info(f'export_url: {export_url}')
 
-        yield from self.process_job_csv(export_url=export_url)
+        for record in self.process_job_csv(export_url=export_url):
+            # Purchase key could be Extid or Sid
+            purchase_key = get_purchase_key_type(record)
+            # Add purchase_key and purchase_id fields
+            record.update({'purchase_key': purchase_key})
+
+            yield record
 
 
 class Purchases(IncrementalStream):
@@ -434,12 +440,13 @@ class Purchases(IncrementalStream):
     def get_records(self, config=None, is_parent=False):
 
         for record in self.get_parent_data(config):
-            purchase_id = record.get("Extid")
+            purchase_key = record.get('purchase_key')
+            purchase_id = record.get(purchase_key)
             # TODO: figure out what to do if extid doesn't exist
             if not purchase_id:
                 continue
             # TODO: sort responses
-            response = self.client.get_purchase(purchase_id, purchase_key='extid').get_body()
+            response = self.client.get_purchase(purchase_id, purchase_key=purchase_key.lower()).get_body()
 
             if response.get("error"):
                 LOGGER.info(f"record: {record}")

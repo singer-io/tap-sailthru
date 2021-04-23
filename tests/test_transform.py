@@ -4,7 +4,7 @@ import pytz
 
 from tap_sailthru.transform import (_format_date_for_job_params,
                                     advance_date_by_microsecond,
-                                    flatten_user_response,
+                                    flatten_user_response, get_purchase_key_type,
                                     get_start_and_end_date_params,
                                     rfc2822_to_datetime, sort_by_rfc2822)
 
@@ -132,5 +132,20 @@ def test_advance_date_by_microsecond():
 
     for test_case in test_cases:
         result = advance_date_by_microsecond(test_case['case'])
+
+        assert test_case['expected'] == result
+
+
+def test_get_purchase_key_type():
+    test_cases = [
+        {'case': {'Extid': '123abc'}, 'expected': 'Extid'},
+        {'case': {'Extid': ''}, 'expected': 'Extid'},
+        {'case': {'Sid': ''}, 'expected': 'Sid'},
+        {'case': {'Sid': '456xyz'}, 'expected': 'Sid'},
+        {'case': {}, 'expected': 'Sid'},
+    ]
+
+    for test_case in test_cases:
+        result = get_purchase_key_type(test_case['case'])
 
         assert test_case['expected'] == result
