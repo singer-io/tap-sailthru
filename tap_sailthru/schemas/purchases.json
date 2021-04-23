@@ -77,7 +77,7 @@
         "string"
       ]
     },
-    "user_id": {
+    "profile_id": {
       "type": [
         "null",
         "string"

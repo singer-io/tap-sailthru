@@ -334,8 +334,8 @@ class BlastSaveList(FullTableStream):
 
     Docs: https://getstarted.sailthru.com/developers/api/job/#blast-save-list
     """
-    tap_stream_id = 'list_users'
-    key_properties = ['user_id']
+    tap_stream_id = 'blast_save_list'
+    key_properties = ['Profile Id']
     params = {
         'job': 'export_list_data',
         'list': '{list_name}',
@@ -365,9 +365,9 @@ class Users(FullTableStream):
     Docs: https://getstarted.sailthru.com/developers/api/user/
     """
     tap_stream_id = 'users'
-    key_properties = ['user_id']
+    key_properties = ['profile_id']
     params = {
-        'id': '{user_id}',
+        'id': '{profile_id}',
         'key': 'sid',
     }
     parent = BlastSaveList
@@ -375,8 +375,8 @@ class Users(FullTableStream):
     def get_records(self, config):
 
         for record in self.get_parent_data():
-            user_id = record['Profile Id']
-            response = self.client.get_user(user_id).get_body()
+            profile_id = record['Profile Id']
+            response = self.client.get_user(profile_id).get_body()
             yield flatten_user_response(response)
 
 
