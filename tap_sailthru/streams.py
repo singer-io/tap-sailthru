@@ -1,5 +1,6 @@
 import csv
 import time
+from datetime import timedelta
 from typing import Any, Iterator
 
 import requests
@@ -8,7 +9,10 @@ from singer import Transformer, metrics
 from singer.utils import strftime
 
 from tap_sailthru.client import SailthruClient
-from tap_sailthru.transform import (advance_date_by_microsecond, flatten_user_response, get_purchase_key_type,
+from tap_sailthru.transform import (advance_date_by_microsecond,
+                                    flatten_user_response,
+                                    format_date_for_job_params,
+                                    get_purchase_key_type,
                                     get_start_and_end_date_params,
                                     rfc2822_to_datetime, sort_by_rfc2822)
 
@@ -142,12 +146,12 @@ class IncrementalStream(BaseStream):
 
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in self.get_records(config):
-                transformed_record = transformer.transform(record, stream_schema, stream_metadata)
-                record_replication_value = rfc2822_to_datetime(transformed_record[self.replication_key])
+                record_replication_value = rfc2822_to_datetime(record[self.replication_key])
                 if record_replication_value >= singer.utils.strptime_to_utc(max_record_value):
+                    transformed_record = transformer.transform(record, stream_schema, stream_metadata)
                     singer.write_record(self.tap_stream_id, transformed_record)
                     counter.increment()
-                    max_record_value = record_replication_value.isoformat()
+                    max_record_value = singer.utils.strftime(record_replication_value)
 
         state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, max_record_value)
         singer.write_state(state)
@@ -380,7 +384,7 @@ class Users(FullTableStream):
             yield flatten_user_response(response)
 
 
-class PurchaseLog(FullTableStream):
+class PurchaseLog(IncrementalStream):
     """
     Triggers asynchronous data export job for export_purchase_log and then
     fetches the records when the job is done.
@@ -389,6 +393,8 @@ class PurchaseLog(FullTableStream):
     """
     tap_stream_id = 'purchase_log'
     key_properties = ['purchase_id']
+    replication_key = 'Date'
+    valid_replication_keys = ['Date']
     params = {
         'job': 'export_purchase_log',
         'start_date': '{purchase_log_start_date}',
@@ -397,27 +403,36 @@ class PurchaseLog(FullTableStream):
 
     def get_records(self, config=None, is_parent=False):
 
+        # TODO: need to pull the bookmarked value
         datestring = config.get('start_date')
+        # TODO: think about processing on a daily basis
         start_date, end_date = get_start_and_end_date_params(datestring)
+        now = singer.utils.now()
 
-        params = {
-            'job': 'export_purchase_log',
-            'start_date': start_date,
-            'end_date': end_date,
-        }
+        # Generate a report for each day up until the end date or today's date
+        while start_date.date() < min(end_date.date(), now.date()):
 
-        self.set_parameters(params)
-        response = self.post_job(parameter=(params['start_date'], params['end_date']))
-        export_url = self.get_job_url(job_id=response['job_id'])
-        LOGGER.info(f'export_url: {export_url}')
+            formatted_job_date = format_date_for_job_params(start_date)
+            params = {
+                'job': 'export_purchase_log',
+                'start_date': formatted_job_date,
+                'end_date': formatted_job_date,
+            }
 
-        for record in self.process_job_csv(export_url=export_url):
-            # Purchase key could be Extid or Sid
-            purchase_key = get_purchase_key_type(record)
-            # Add purchase_key and purchase_id fields
-            record.update({'purchase_key': purchase_key})
+            self.set_parameters(params)
+            response = self.post_job(parameter=(params['start_date'], params['end_date']))
+            export_url = self.get_job_url(job_id=response['job_id'])
+            LOGGER.info(f'export_url: {export_url}')
 
-            yield record
+            for record in self.process_job_csv(export_url=export_url):
+                # Purchase key could be Extid or Sid
+                purchase_key = get_purchase_key_type(record)
+                # Add purchase_key field
+                record.update({'purchase_key': purchase_key})
+
+                yield record
+
+            start_date += timedelta(days=1)
 
 
 class Purchases(IncrementalStream):

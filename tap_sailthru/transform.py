@@ -16,7 +16,7 @@ def rfc2822_to_datetime(datestring: str) -> datetime:
     return singer.utils.strptime_to_utc(dt)
 
 
-def _format_date_for_job_params(dt: datetime) -> str:
+def format_date_for_job_params(dt: datetime) -> str:
     """
     Takes in a datetime and returns a string padded with 0 in YYYYMMDD format.
 
@@ -36,7 +36,7 @@ def _format_date_for_job_params(dt: datetime) -> str:
     return f'{dt.year}{month}{day}'
 
 
-def get_start_and_end_date_params(start_date: str) -> str:
+def get_start_and_end_date_params(start_date: str) -> datetime:
     """
     Gets the 'start_date' from the config and returns a string in the form
     of 'YYYYMMMDD'.
@@ -48,7 +48,7 @@ def get_start_and_end_date_params(start_date: str) -> str:
     start = singer.utils.strptime_to_utc(start_date)
     end = start + datetime.timedelta(days=30)
 
-    return _format_date_for_job_params(start), _format_date_for_job_params(end)
+    return start, end
 
 
 def sort_by_rfc2822(data: List[dict], sort_key) -> List[dict]:
