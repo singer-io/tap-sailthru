@@ -2,9 +2,9 @@ import datetime
 
 import pytz
 
-from tap_sailthru.transform import (format_date_for_job_params,
-                                    advance_date_by_microsecond,
-                                    flatten_user_response, get_purchase_key_type,
+from tap_sailthru.transform import (advance_date_by_microsecond,
+                                    flatten_user_response,
+                                    get_purchase_key_type,
                                     get_start_and_end_date_params,
                                     rfc2822_to_datetime, sort_by_rfc2822)
 
@@ -18,26 +18,12 @@ def test_rfc2822_to_datetime():
     assert expected == result
 
 
-def test_format_date_for_job_params():
-    test_cases = [
-        {'case': datetime.datetime(2021, 1, 1), 'expected': '20210101'},
-        {'case': datetime.datetime(1973, 12, 31), 'expected': '19731231'},
-        {'case': datetime.datetime(2002, 5, 11), 'expected': '20020511'},
-        {'case': datetime.datetime(1950, 10, 9), 'expected': '19501009'},
-    ]
-
-    for test_case in test_cases:
-        result = format_date_for_job_params(test_case['case'])
-
-        assert test_case['expected'] == result
-
-
 def test_get_start_and_end_date_params():
     test_cases = [
-        {'case': '2021-01-01T00:00:00', 'expected': (datetime.datetime(2021, 1, 1, 0, 0, tzinfo=pytz.utc), datetime.datetime(2021, 1, 31, 0, 0, tzinfo=pytz.utc))},
-        {'case': '1973-12-31T00:00:00', 'expected': (datetime.datetime(1973, 12, 31, 0, 0, tzinfo=pytz.utc), datetime.datetime(1974, 1, 30, 0, 0, tzinfo=pytz.utc))},
-        {'case': '2002-05-11T00:00:00', 'expected': (datetime.datetime(2002, 5, 11, 0, 0, tzinfo=pytz.utc), datetime.datetime(2002, 6, 10, 0, 0, tzinfo=pytz.utc))},
-        {'case': '1950-10-09T00:00:00', 'expected': (datetime.datetime(1950, 10, 9, 0, 0, tzinfo=pytz.utc), datetime.datetime(1950, 11, 8, 0, 0, tzinfo=pytz.utc))},
+        {'case': datetime.datetime(2021, 1, 1, 0, 0, tzinfo=pytz.utc), 'expected': (datetime.datetime(2021, 1, 1, 0, 0, tzinfo=pytz.utc), datetime.datetime(2021, 1, 31, 0, 0, tzinfo=pytz.utc))},
+        {'case': datetime.datetime(1973, 12, 31, 0, 0, tzinfo=pytz.utc), 'expected': (datetime.datetime(1973, 12, 31, 0, 0, tzinfo=pytz.utc), datetime.datetime(1974, 1, 30, 0, 0, tzinfo=pytz.utc))},
+        {'case': datetime.datetime(2002, 5, 11, 0, 0, tzinfo=pytz.utc), 'expected': (datetime.datetime(2002, 5, 11, 0, 0, tzinfo=pytz.utc), datetime.datetime(2002, 6, 10, 0, 0, tzinfo=pytz.utc))},
+        {'case': datetime.datetime(1950, 10, 9, 0, 0, tzinfo=pytz.utc), 'expected': (datetime.datetime(1950, 10, 9, 0, 0, tzinfo=pytz.utc), datetime.datetime(1950, 11, 8, 0, 0, tzinfo=pytz.utc))},
     ]
 
     for test_case in test_cases:

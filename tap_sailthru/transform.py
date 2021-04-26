@@ -16,39 +16,16 @@ def rfc2822_to_datetime(datestring: str) -> datetime:
     return singer.utils.strptime_to_utc(dt)
 
 
-def format_date_for_job_params(dt: datetime) -> str:
+def get_start_and_end_date_params(start_datetime: datetime) -> datetime:
     """
-    Takes in a datetime and returns a string padded with 0 in YYYYMMDD format.
+    Returns the start datetime and an end datetime that is 30 days added
+    to the start datetime.
 
-    :param dt: a datetime object
-    :return: a string in the form of 'YYYYMMDD'
+    :param start_datetime: A datetime object
+    :return: A 'start' datetime object and a 'end' datetime object that
+        is 30 days from the start datetime
     """
-    if dt.day < 10:
-        day = f'{dt.day:02d}'
-    else:
-        day = f'{dt.day}'
-
-    if dt.month < 10:
-        month = f'{dt.month:02d}'
-    else:
-        month = f'{dt.month}'
-
-    return f'{dt.year}{month}{day}'
-
-
-def get_start_and_end_date_params(start_date: str) -> datetime:
-    """
-    Gets the 'start_date' from the config and returns a string in the form
-    of 'YYYYMMMDD'.
-
-    :param start_date: the start_date datestring from the config file
-    :return: date string in the form 'YYYYMMDD'
-    """
-
-    start = singer.utils.strptime_to_utc(start_date)
-    end = start + datetime.timedelta(days=30)
-
-    return start, end
+    return start_datetime, start_datetime + datetime.timedelta(days=30)
 
 
 def sort_by_rfc2822(data: List[dict], sort_key) -> List[dict]:
