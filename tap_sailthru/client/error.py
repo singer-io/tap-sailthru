@@ -8,3 +8,6 @@ class SailthruClient429Error(Exception):
 
 class SailthruServer5xxError(Exception):
     pass
+
+class SailthruJobTimeout(Exception):
+    pass

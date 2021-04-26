@@ -9,6 +9,7 @@ import singer
 from singer import Transformer, metrics
 
 from tap_sailthru.client import SailthruClient
+from tap_sailthru.client.error import SailthruJobTimeout
 from tap_sailthru.transform import (advance_date_by_microsecond,
                                     flatten_user_response,
                                     get_purchase_key_type,
@@ -69,23 +70,27 @@ class BaseStream:
             LOGGER.info(f'Starting background job for {job_name}, parameter={parameter}')
         else:
             LOGGER.info(f'Starting background job for {job_name}')
-        # TODO: handle non 200 responses
         return self.client.create_job(self.params).get_body()
 
-    def get_job_url(self, job_id: str) -> str:
+    def get_job_url(self, job_id: str, timeout: int = 600) -> str:
         """
         Polls the /job endpoint and checks to see if export job is completed.
         Returns the export URL when job is ready.
 
         :param job_id: the job_id to poll
+        :param timeout: the default timeout (seconds) before halting request
         :return: the export URL
         """
-        # TODO: implement better error handling/timeout
         status = ''
         while status != 'completed':
             response = self.client.get_job(job_id).get_body()
             status = response.get('status')
             LOGGER.info(f'Job report status: {status}')
+            job_start_time = rfc2822_to_datetime(response.get('start_time'))
+            now = singer.utils.now()
+            if (now - job_start_time).seconds > timeout:
+                LOGGER.critical(f"Request with job_id {job_id} exceeded {timeout} second timeout")
+                raise SailthruJobTimeout
             time.sleep(1)
 
         return response.get('export_url')
