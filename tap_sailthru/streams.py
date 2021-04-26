@@ -141,19 +141,19 @@ class IncrementalStream(BaseStream):
         # Since records can contain the same 'modify_time' timestamp due to batch uploads
         # we need to use >= to compare and write records and in order to avoid re-syncing
         # records from the previous run, we add a microsecond to the start date
-        start_time = advance_date_by_microsecond(start_time)
-        max_record_value = start_time
+        bookmark_value = advance_date_by_microsecond(start_time)
+        bookmark_datetime = singer.utils.strptime_to_utc(bookmark_value)
 
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in self.get_records(config):
-                record_replication_value = rfc2822_to_datetime(record[self.replication_key])
-                if record_replication_value >= singer.utils.strptime_to_utc(max_record_value):
+                record_datetime = rfc2822_to_datetime(record[self.replication_key])
+                if record_datetime >= bookmark_datetime:
                     transformed_record = transformer.transform(record, stream_schema, stream_metadata)
                     singer.write_record(self.tap_stream_id, transformed_record)
                     counter.increment()
-                    max_record_value = singer.utils.strftime(record_replication_value)
+            bookmark_value = singer.utils.strftime(max(record_datetime, bookmark_datetime))
 
-        state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, max_record_value)
+        state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, bookmark_value)
         singer.write_state(state)
         return state
 
