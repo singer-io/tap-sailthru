@@ -36,26 +36,26 @@ class BaseStream:
     def __init__(self, client: SailthruClient):
         self.client = client
 
-    def get_records(self, config: dict = None, is_parent: bool = False) -> list:
+    def get_records(self, bookmark_date: str = None, is_parent: bool = False) -> list:
         """
         Returns a list of records for that stream.
 
-        :param config: The tap config file
+        :param bookmark_date: The datestring representing the bookmark date
         :param is_parent: If true, may change the type of data
             that is returned for a child stream to consume
         :return: list of records
         """
         raise NotImplementedError("Child classes of BaseStream require `get_records` implementation")
 
-    def get_parent_data(self, config: dict = None) -> list:
+    def get_parent_data(self, bookmark_date: str = None) -> list:
         """
         Returns a list of records from the parent stream.
 
-        :param config: The tap config file
+        :param bookmark_date: The datestring representing the bookmark date
         :return: A list of records
         """
         parent = self.parent(self.client)
-        return parent.get_records(config, is_parent=True)
+        return parent.get_records(bookmark_date, is_parent=True)
 
     def post_job(self, parameter: Any = None) -> dict:
         """
@@ -133,19 +133,19 @@ class IncrementalStream(BaseStream):
         # Since records can contain the same 'modify_time' timestamp due to batch uploads
         # we need to use >= to compare and write records and in order to avoid re-syncing
         # records from the previous run, we add a microsecond to the start date
-        bookmark_value = advance_date_by_microsecond(start_time)
-        bookmark_datetime = singer.utils.strptime_to_utc(bookmark_value)
+        bookmark_date = advance_date_by_microsecond(start_time)
+        bookmark_datetime = singer.utils.strptime_to_utc(bookmark_date)
 
         with metrics.record_counter(self.tap_stream_id) as counter:
-            for record in self.get_records(config):
+            for record in self.get_records(bookmark_date):
                 record_datetime = rfc2822_to_datetime(record[self.replication_key])
                 if record_datetime >= bookmark_datetime:
                     transformed_record = transformer.transform(record, stream_schema, stream_metadata)
                     singer.write_record(self.tap_stream_id, transformed_record)
                     counter.increment()
-            bookmark_value = singer.utils.strftime(max(record_datetime, bookmark_datetime))
+            bookmark_date = singer.utils.strftime(max(record_datetime, bookmark_datetime))
 
-        state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, bookmark_value)
+        state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, bookmark_date)
         singer.write_state(state)
         return state
 
@@ -174,7 +174,7 @@ class FullTableStream(BaseStream):
         :return: State data in the form of a dictionary
         """
         with metrics.record_counter(self.tap_stream_id) as counter:
-            for record in self.get_records(config):
+            for record in self.get_records():
                 transformed_record = transformer.transform(record, stream_schema, stream_metadata)
                 singer.write_record(self.tap_stream_id, transformed_record)
                 counter.increment()
@@ -192,7 +192,7 @@ class AdTargeterPlans(FullTableStream):
     tap_stream_id = 'ad_targeter_plans'
     key_properties = ['plan_id']
 
-    def get_records(self, config=None, is_parent=False):
+    def get_records(self, bookmark_date=None, is_parent=False):
         response = self.client.get_ad_targeter_plans().get_body()
         yield from response['ad_plans']
 
@@ -215,7 +215,7 @@ class Blasts(IncrementalStream):
         'statuses': ['sent', 'sending', 'unscheduled', 'scheduled'],
     }
 
-    def get_records(self, config=None, is_parent=False):
+    def get_records(self, bookmark_date=None, is_parent=False):
         # Will just return a list of blast_id if being called
         # by child stream
         if is_parent:
@@ -254,7 +254,7 @@ class BlastQuery(FullTableStream):
     }
     parent = Blasts
 
-    def get_records(self, config=None, is_parent=False):
+    def get_records(self, bookmark_date=None, is_parent=False):
 
         for blast_id in self.get_parent_data():
             self.params['blast_id'] = blast_id
@@ -289,7 +289,7 @@ class BlastRepeats(IncrementalStream):
     replication_key = 'modify_time'
     valid_replication_keys = ['modify_time']
 
-    def get_records(self, config=None, is_parent=False):
+    def get_records(self, bookmark_date=None, is_parent=False):
         response = self.client.get_blast_repeats().get_body()
         repeats = response['repeats']
         # Sort repeats by 'modify_time' field
@@ -308,7 +308,7 @@ class Lists(FullTableStream):
     key_properties = ['list_id']
 
     # TODO: might be good candiate for lru
-    def get_records(self, config=None, is_parent=False):
+    def get_records(self, bookmark_date=None, is_parent=False):
         # Will just return list names if called by child stream
         if is_parent:
             response = self.client.get_lists().get_body()
@@ -334,7 +334,7 @@ class BlastSaveList(FullTableStream):
     }
     parent = Lists
 
-    def get_records(self, config=None, is_parent=False):
+    def get_records(self, bookmark_date=None, is_parent=False):
 
         for list_name in self.get_parent_data():
             self.params['list'] = list_name
@@ -385,12 +385,10 @@ class PurchaseLog(IncrementalStream):
         'end_date': '{purchase_log_end_date}',
     }
 
-    def get_records(self, config=None, is_parent=False):
+    def get_records(self, bookmark_date=None, is_parent=False):
 
-        # TODO: need to pull the bookmarked value
-        datestring = config.get('start_date')
         # TODO: think about processing on a daily basis
-        start_date, end_date = get_start_and_end_date_params(datestring)
+        start_date, end_date = get_start_and_end_date_params(bookmark_date)
         now = singer.utils.now()
 
         # Generate a report for each day up until the end date or today's date
@@ -431,9 +429,9 @@ class Purchases(IncrementalStream):
     parent = PurchaseLog
     batched = True
 
-    def get_records(self, config=None, is_parent=False):
+    def get_records(self, bookmark_date=None, is_parent=False):
 
-        for record in self.get_parent_data(config):
+        for record in self.get_parent_data(bookmark_date):
             purchase_key = record.get('purchase_key')
             purchase_id = record.get(purchase_key)
             # TODO: figure out what to do if extid doesn't exist
