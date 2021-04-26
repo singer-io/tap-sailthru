@@ -47,14 +47,6 @@ class BaseStream:
         """
         raise NotImplementedError("Child classes of BaseStream require `get_records` implementation")
 
-    def set_parameters(self, params: dict) -> None:
-        """
-        Sets or updates the `params` attribute of a class.
-
-        :param params: Dictionary of parameters to set or update the class with
-        """
-        self.params = params
-
     def get_parent_data(self, config: dict = None) -> list:
         """
         Returns a list of records from the parent stream.
@@ -265,13 +257,9 @@ class BlastQuery(FullTableStream):
     def get_records(self, config=None, is_parent=False):
 
         for blast_id in self.get_parent_data():
-            params = {
-                'job': 'blast_query',
-                'blast_id': blast_id,
-            }
+            self.params['blast_id'] = blast_id
 
-            self.set_parameters(params)
-            response = self.post_job(parameter=params['blast_id'])
+            response = self.post_job(parameter=self.params['blast_id'])
             try:
                 export_url = self.get_job_url(job_id=response['job_id'])
             except Exception as e:
@@ -280,7 +268,7 @@ class BlastQuery(FullTableStream):
                     # Error code 99 = You may not export a blast that has been sent
                     if response.get("error") == 99:
                         LOGGER.warn(f"{response.get('errormsg')}")
-                        LOGGER.info(f"Skipping blast_id: {params['blast_id']}")
+                        LOGGER.info(f"Skipping blast_id: {self.params['blast_id']}")
                         continue
                     else:
                         LOGGER.exception(e)
@@ -349,13 +337,9 @@ class BlastSaveList(FullTableStream):
     def get_records(self, config=None, is_parent=False):
 
         for list_name in self.get_parent_data():
-            params = {
-                'job': 'export_list_data',
-                'list': list_name,
-            }
+            self.params['list'] = list_name
 
-            self.set_parameters(params)
-            response = self.post_job(parameter=params['list'])
+            response = self.post_job(parameter=self.params['list'])
             export_url = self.get_job_url(job_id=response['job_id'])
             LOGGER.info(f'export_url: {export_url}')
 
@@ -413,18 +397,16 @@ class PurchaseLog(IncrementalStream):
         while start_date.date() < min(end_date.date(), now.date()):
 
             formatted_job_date = format_date_for_job_params(start_date)
-            params = {
-                'job': 'export_purchase_log',
-                'start_date': formatted_job_date,
-                'end_date': formatted_job_date,
-            }
+            self.params['start_date'] = formatted_job_date
+            self.params['end_date'] = formatted_job_date
 
-            self.set_parameters(params)
-            response = self.post_job(parameter=(params['start_date'], params['end_date']))
+            response = self.post_job(parameter=(self.params['start_date'],
+                                     self.params['end_date']))
             export_url = self.get_job_url(job_id=response['job_id'])
             LOGGER.info(f'export_url: {export_url}')
 
-            records = sort_by_rfc2822(self.process_job_csv(export_url=export_url), 'Date')
+            records = sort_by_rfc2822(
+                        self.process_job_csv(export_url=export_url), 'Date')
             for record in records:
                 # Purchase key could be Extid or Sid
                 purchase_key = get_purchase_key_type(record)
@@ -446,10 +428,6 @@ class Purchases(IncrementalStream):
     key_properties = ['item_id']
     replication_key = 'time'
     valid_replication_keys = ['time']
-    params = {
-        'purchase_id': '{purchase_id}',
-        'purchase_key': 'sid',
-    }
     parent = PurchaseLog
     batched = True
 
@@ -465,9 +443,8 @@ class Purchases(IncrementalStream):
             response = self.client.get_purchase(purchase_id, purchase_key=purchase_key.lower()).get_body()
 
             if response.get("error"):
-                LOGGER.info(f"record: {record}")
-                LOGGER.info(f"purchase_id: {purchase_id}")
-                LOGGER.info(f"response: {response}")
+                LOGGER.warn(f"error with record: {response['error']}")
+                continue
 
             yield response
 
