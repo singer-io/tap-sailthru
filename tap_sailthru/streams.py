@@ -82,11 +82,11 @@ class BaseStream:
         :return: the export URL
         """
         status = ''
+        job_start_time = singer.utils.now()
         while status != 'completed':
             response = self.client.get_job(job_id).get_body()
             status = response.get('status')
             LOGGER.info(f'Job report status: {status}')
-            job_start_time = rfc2822_to_datetime(response.get('start_time'))
             now = singer.utils.now()
             if (now - job_start_time).seconds > timeout:
                 LOGGER.critical(f"Request with job_id {job_id} exceeded {timeout} second timeout")
@@ -139,6 +139,7 @@ class IncrementalStream(BaseStream):
         # records from the previous run, we add a microsecond to the start date
         bookmark_date = advance_date_by_microsecond(start_time)
         bookmark_datetime = singer.utils.strptime_to_utc(bookmark_date)
+        max_datetime = bookmark_datetime
 
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in self.get_records(bookmark_datetime):
@@ -147,11 +148,10 @@ class IncrementalStream(BaseStream):
                     transformed_record = transformer.transform(record, stream_schema, stream_metadata)
                     singer.write_record(self.tap_stream_id, transformed_record)
                     counter.increment()
-            # TODO: look at this
-            bookmark_date = singer.utils.strftime(max(record_datetime, bookmark_datetime))
+                    max_datetime = max(record_datetime, max_datetime)
+            bookmark_date = singer.utils.strftime(max_datetime)
 
         state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, bookmark_date)
-        singer.write_state(state)
         return state
 
 
@@ -184,7 +184,6 @@ class FullTableStream(BaseStream):
                 singer.write_record(self.tap_stream_id, transformed_record)
                 counter.increment()
 
-        singer.write_state(state)
         return state
 
 
@@ -366,7 +365,7 @@ class Users(FullTableStream):
     }
     parent = BlastSaveList
 
-    def get_records(self, config):
+    def get_records(self):
 
         for record in self.get_parent_data():
             profile_id = record['Profile Id']
@@ -439,8 +438,8 @@ class Purchases(IncrementalStream):
         for record in self.get_parent_data(bookmark_datetime):
             purchase_key = record.get('purchase_key')
             purchase_id = record.get(purchase_key)
-            # TODO: figure out what to do if extid doesn't exist
             if not purchase_id:
+                LOGGER.warn("No purchase_id found for record")
                 continue
             # TODO: sort responses
             response = self.client.get_purchase(purchase_id, purchase_key=purchase_key.lower()).get_body()
