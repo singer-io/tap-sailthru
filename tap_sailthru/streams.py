@@ -222,7 +222,6 @@ class Blasts(IncrementalStream):
         'statuses': ['sent', 'sending', 'unscheduled', 'scheduled'],
     }
 
-    # TODO: investigate 403 response code
     def get_records(self, bookmark_datetime=None, is_parent=False):
         # Will just return a list of blast_id if being called
         # by child stream
@@ -235,7 +234,6 @@ class Blasts(IncrementalStream):
 
             yield from blast_ids
         else:
-            # TODO: Need to figure out how to sort these
             blasts = []
             for status in self.params['statuses']:
                 response = self.client.get_blasts(status).get_body()
