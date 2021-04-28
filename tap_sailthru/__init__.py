@@ -1,3 +1,7 @@
+"""
+Entrypoint for tap_sailthru.
+"""
+
 import singer
 from singer import utils
 
@@ -10,6 +14,9 @@ LOGGER = singer.get_logger()
 
 @utils.handle_top_exception(LOGGER)
 def main():
+    """
+    Entrypoint function for tap.
+    """
     # Parse command line arguments
     args = utils.parse_args(REQUIRED_CONFIG_KEYS)
 

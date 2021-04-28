@@ -1,3 +1,7 @@
+"""
+This module defines the sync orchestration logic for the tap.
+"""
+
 import singer
 from singer import Transformer, metadata
 
