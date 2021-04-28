@@ -1,3 +1,7 @@
+"""
+Module for transformation and utility functions.
+"""
+
 import datetime
 from email import utils
 from typing import List
@@ -12,8 +16,8 @@ def rfc2822_to_datetime(datestring: str) -> datetime:
     :param datestring: the date string in RFC 2822 format
     :return: datetime object in UTC timezone
     """
-    dt = utils.parsedate_to_datetime(datestring).isoformat()
-    return singer.utils.strptime_to_utc(dt)
+    datetime_obj = utils.parsedate_to_datetime(datestring).isoformat()
+    return singer.utils.strptime_to_utc(datetime_obj)
 
 
 def get_start_and_end_date_params(start_datetime: datetime) -> datetime:
@@ -52,7 +56,7 @@ def flatten_user_response(response: dict) -> dict:
         'cookie': response.get('keys', {}).get('cookie'),
         'email': response.get('keys', {}).get('email'),
         'vars': response.get('vars'),
-        'lists': [list_name for list_name in response.get('lists', {}).keys()],
+        'lists': list(response.get('lists', {}).keys()),
         'engagement': response.get('engagement'),
         'optout_email': response.get('optout_email'),
     }
@@ -66,8 +70,7 @@ def advance_date_by_microsecond(date: str) -> str:
     :return: A new date string with an added microsecond
     """
 
-    mu = datetime.timedelta(microseconds=1)
-    new_dt = singer.utils.strptime_to_utc(date) + mu
+    new_dt = singer.utils.strptime_to_utc(date) + datetime.timedelta(microseconds=1)
 
     return singer.utils.strftime(new_dt)
 
@@ -81,5 +84,5 @@ def get_purchase_key_type(record: dict) -> str:
     """
     if record.get('Extid') is not None:
         return 'Extid'
-    else:
-        return 'Sid'
+
+    return 'Sid'
