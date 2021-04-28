@@ -10,6 +10,12 @@
         "string"
       ]
     },
+    "blast_id": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
     "email hash": {
       "type": [
         "null",
