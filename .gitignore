@@ -114,3 +114,4 @@ target*.json
 # local test file
 test_output.sh
 purchase_generator.py
+*.csv

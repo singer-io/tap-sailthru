@@ -1,3 +1,7 @@
+"""
+This module defines the stream classes and their individual sync logic.
+"""
+
 import csv
 import datetime
 import time
@@ -40,18 +44,21 @@ class BaseStream:
         """
         Returns a list of records for that stream.
 
-        :param bookmark_datetime: The datetime object representing the bookmark date
+        :param bookmark_datetime: The datetime object representing the
+            bookmark date
         :param is_parent: If true, may change the type of data
             that is returned for a child stream to consume
         :return: list of records
         """
-        raise NotImplementedError("Child classes of BaseStream require `get_records` implementation")
+        raise NotImplementedError("Child classes of BaseStream require "
+                                  "`get_records` implementation")
 
     def get_parent_data(self, bookmark_datetime: datetime = None) -> list:
         """
         Returns a list of records from the parent stream.
 
-        :param bookmark_datetime: The datetime object representing the bookmark date
+        :param bookmark_datetime: The datetime object representing the
+            bookmark date
         :return: A list of records
         """
         parent = self.parent(self.client)
@@ -67,7 +74,8 @@ class BaseStream:
         """
         job_name = self.params.get('job')
         if parameter:
-            LOGGER.info(f'Starting background job for {job_name}, parameter={parameter}')
+            LOGGER.info(f'Starting background job for {job_name},'
+                        ' parameter={parameter}')
         else:
             LOGGER.info(f'Starting background job for {job_name}')
         return self.client.create_job(self.params).get_body()
@@ -89,24 +97,29 @@ class BaseStream:
             LOGGER.info(f'Job report status: {status}')
             now = singer.utils.now()
             if (now - job_start_time).seconds > timeout:
-                LOGGER.critical(f"Request with job_id {job_id} exceeded {timeout} second timeout")
+                LOGGER.critical(f'Request with job_id {job_id}'
+                                ' exceeded {timeout} second timeout')
                 raise SailthruJobTimeout
             time.sleep(1)
 
         return response.get('export_url')
 
     @staticmethod
-    def process_job_csv(export_url: str, chunk_size: int = 1024, parent_params: dict = None) -> Iterator[dict]:
+    def process_job_csv(export_url: str,
+                        chunk_size: int = 1024,
+                        parent_params: dict = None) -> Iterator[dict]:
         """
         Fetches CSV from URL and streams each line.
 
         :param export_url: The URL from which to fetch the CSV data from
         :param chunk_size: The chunk size to read per line
-        :param parent_params: A dictionary with "parent" parameters to append to each record
+        :param parent_params: A dictionary with "parent" parameters to append
+            to each record
         :return: A generator of a dictionary
         """
-        with requests.get(export_url, stream=True) as r:
-            reader = csv.DictReader(line.decode('utf-8') for line in r.iter_lines(chunk_size=chunk_size))
+        with requests.get(export_url, stream=True) as req:
+            reader = csv.DictReader(line.decode('utf-8') for line
+                                    in req.iter_lines(chunk_size=chunk_size))
             for row in reader:
                 if parent_params:
                     row.update(parent_params)
@@ -122,10 +135,12 @@ class IncrementalStream(BaseStream):
     """
     replication_method = 'INCREMENTAL'
 
-    def __init__(self, client):
-        super().__init__(client)
-
-    def sync(self, state: dict, stream_schema: dict, stream_metadata: dict, config: dict, transformer: Transformer) -> dict:
+    def sync(self,
+             state: dict,
+             stream_schema: dict,
+             stream_metadata: dict,
+             config: dict,
+             transformer: Transformer) -> dict:
         """
         The sync logic for an incremental stream.
 
@@ -136,7 +151,10 @@ class IncrementalStream(BaseStream):
         :param transformer: A singer Transformer object
         :return: State data in the form of a dictionary
         """
-        start_time = singer.get_bookmark(state, self.tap_stream_id, self.replication_key, config['start_date'])
+        start_time = singer.get_bookmark(state,
+                                         self.tap_stream_id,
+                                         self.replication_key,
+                                         config['start_date'])
         # Since records can contain the same 'modify_time' timestamp due to batch uploads
         # we need to use >= to compare and write records and in order to avoid re-syncing
         # records from the previous run, we add a microsecond to the start date
@@ -148,13 +166,18 @@ class IncrementalStream(BaseStream):
             for record in self.get_records(bookmark_datetime):
                 record_datetime = rfc2822_to_datetime(record[self.replication_key])
                 if record_datetime >= bookmark_datetime:
-                    transformed_record = transformer.transform(record, stream_schema, stream_metadata)
+                    transformed_record = transformer.transform(record,
+                                                               stream_schema,
+                                                               stream_metadata)
                     singer.write_record(self.tap_stream_id, transformed_record)
                     counter.increment()
                     max_datetime = max(record_datetime, max_datetime)
             bookmark_date = singer.utils.strftime(max_datetime)
 
-        state = singer.write_bookmark(state, self.tap_stream_id, self.replication_key, bookmark_date)
+        state = singer.write_bookmark(state,
+                                      self.tap_stream_id,
+                                      self.replication_key,
+                                      bookmark_date)
         return state
 
 
@@ -167,10 +190,12 @@ class FullTableStream(BaseStream):
     """
     replication_method = 'FULL_TABLE'
 
-    def __init__(self, client):
-        super().__init__(client)
-
-    def sync(self, state: dict, stream_schema: dict, stream_metadata: dict, config: dict, transformer: Transformer) -> dict:
+    def sync(self,
+             state: dict,
+             stream_schema: dict,
+             stream_metadata: dict,
+             config: dict,
+             transformer: Transformer) -> dict:
         """
         The sync logic for an full table stream.
 
@@ -269,7 +294,8 @@ class BlastQuery(FullTableStream):
             if response.get("error"):
                 # https://getstarted.sailthru.com/developers/api/job/#Error_Codes
                 # Error code 99 = You may not export a blast that has been sent
-                LOGGER.warn(f"error code: {response.get('error')} - message: {response.get('errormsg')}")
+                LOGGER.warn(f"error code: {response.get('error')} "
+                            "- message: {response.get('errormsg')}")
                 LOGGER.info(f"Skipping blast_id: {blast_id}")
                 continue
             export_url = self.get_job_url(job_id=response['job_id'])
@@ -277,7 +303,8 @@ class BlastQuery(FullTableStream):
             LOGGER.info(f'export_url: {export_url}')
 
             # Add blast id to each record
-            yield from self.process_job_csv(export_url=export_url, parent_params={'blast_id': blast_id})
+            yield from self.process_job_csv(export_url=export_url,
+                                            parent_params={'blast_id': blast_id})
 
 
 class BlastRepeats(IncrementalStream):
@@ -439,7 +466,8 @@ class Purchases(IncrementalStream):
                 LOGGER.warn("No purchase_id found for record")
                 continue
             # TODO: sort responses
-            response = self.client.get_purchase(purchase_id, purchase_key=purchase_key.lower()).get_body()
+            response = self.client.get_purchase(purchase_id,
+                                                purchase_key=purchase_key.lower()).get_body()
 
             if response.get("error"):
                 LOGGER.warn(f"error with record: {response['error']}")
