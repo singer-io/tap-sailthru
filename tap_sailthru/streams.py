@@ -61,6 +61,7 @@ class BaseStream:
             bookmark date
         :return: A list of records
         """
+        # pylint: disable=not-callable
         parent = self.parent(self.client)
         return parent.get_records(bookmark_datetime, is_parent=True)
 
@@ -74,9 +75,11 @@ class BaseStream:
         """
         job_name = self.params.get('job')
         if parameter:
+            # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f'Starting background job for {job_name},'
                         ' parameter={parameter}')
         else:
+            # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f'Starting background job for {job_name}')
         return self.client.create_job(self.params).get_body()
 
@@ -94,9 +97,11 @@ class BaseStream:
         while status != 'completed':
             response = self.client.get_job(job_id).get_body()
             status = response.get('status')
+            # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f'Job report status: {status}')
             now = singer.utils.now()
             if (now - job_start_time).seconds > timeout:
+                # pylint: disable=logging-fstring-interpolation
                 LOGGER.critical(f'Request with job_id {job_id}'
                                 ' exceeded {timeout} second timeout')
                 raise SailthruJobTimeout
@@ -125,7 +130,7 @@ class BaseStream:
                     row.update(parent_params)
                 yield row
 
-
+# pylint: disable=abstract-method
 class IncrementalStream(BaseStream):
     """
     A child class of a base stream used to represent streams that use the
@@ -135,6 +140,7 @@ class IncrementalStream(BaseStream):
     """
     replication_method = 'INCREMENTAL'
 
+    # pylint: disable=too-many-arguments
     def sync(self,
              state: dict,
              stream_schema: dict,
@@ -180,7 +186,7 @@ class IncrementalStream(BaseStream):
                                       bookmark_date)
         return state
 
-
+# pylint: disable=abstract-method
 class FullTableStream(BaseStream):
     """
     A child class of a base stream used to represent streams that use the
@@ -190,6 +196,7 @@ class FullTableStream(BaseStream):
     """
     replication_method = 'FULL_TABLE'
 
+    # pylint: disable=too-many-arguments
     def sync(self,
              state: dict,
              stream_schema: dict,
@@ -294,12 +301,15 @@ class BlastQuery(FullTableStream):
             if response.get("error"):
                 # https://getstarted.sailthru.com/developers/api/job/#Error_Codes
                 # Error code 99 = You may not export a blast that has been sent
-                LOGGER.warn(f"error code: {response.get('error')} "
+                # pylint: disable=logging-fstring-interpolation
+                LOGGER.warning(f"error code: {response.get('error')} "
                             "- message: {response.get('errormsg')}")
+                # pylint: disable=logging-fstring-interpolation
                 LOGGER.info(f"Skipping blast_id: {blast_id}")
                 continue
             export_url = self.get_job_url(job_id=response['job_id'])
 
+            # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f'export_url: {export_url}')
 
             # Add blast id to each record
@@ -341,8 +351,8 @@ class Lists(FullTableStream):
         # Will just return list names if called by child stream
         if is_parent:
             response = self.client.get_lists().get_body()
-            for list in response['lists']:
-                yield list['name']
+            for record in response['lists']:
+                yield record['name']
         else:
             response = self.client.get_lists().get_body()
             yield from response['lists']
@@ -370,6 +380,7 @@ class BlastSaveList(FullTableStream):
 
             response = self.post_job(parameter=self.params['list'])
             export_url = self.get_job_url(job_id=response['job_id'])
+            # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f'export_url: {export_url}')
 
             yield from self.process_job_csv(export_url=export_url)
@@ -389,7 +400,9 @@ class Users(FullTableStream):
     }
     parent = BlastSaveList
 
-    def get_records(self):
+    def get_records(self,
+                    bookmark_datetime: datetime = None,
+                    is_parent: bool = None):
 
         for record in self.get_parent_data():
             profile_id = record['Profile Id']
@@ -429,6 +442,7 @@ class PurchaseLog(IncrementalStream):
             response = self.post_job(parameter=(self.params['start_date'],
                                      self.params['end_date']))
             export_url = self.get_job_url(job_id=response['job_id'])
+            # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f'export_url: {export_url}')
 
             records = sort_by_rfc2822(
@@ -463,14 +477,15 @@ class Purchases(IncrementalStream):
             purchase_key = record.get('purchase_key')
             purchase_id = record.get(purchase_key)
             if not purchase_id:
-                LOGGER.warn("No purchase_id found for record")
+                LOGGER.warninging("No purchase_id found for record")
                 continue
             # TODO: sort responses
             response = self.client.get_purchase(purchase_id,
                                                 purchase_key=purchase_key.lower()).get_body()
 
             if response.get("error"):
-                LOGGER.warn(f"error with record: {response['error']}")
+                # pylint: disable=logging-fstring-interpolation
+                LOGGER.warninging(f"error with record: {response['error']}")
                 continue
 
             yield response
