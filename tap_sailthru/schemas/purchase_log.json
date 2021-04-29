@@ -4,61 +4,61 @@
     "object"
   ],
   "properties": {
-    "Date": {
+    "date": {
       "type": [
         "null",
         "string"
       ]
     },
-    "Email Hash": {
+    "email_hash": {
       "type": [
         "null",
         "string"
       ]
     },
-    "Extid": {
+    "extid": {
       "type": [
         "null",
         "string"
       ]
     },
-    "Message ID": {
+    "message_id": {
       "type": [
         "null",
         "string"
       ]
     },
-    "Items": {
+    "items": {
       "type": [
         "null",
         "string"
       ]
     },
-    "Urls": {
+    "urls": {
       "type": [
         "null",
         "string"
       ]
     },
-    "Price": {
+    "price": {
       "type": [
         "null",
         "string"
       ]
     },
-    "Channel": {
+    "channel": {
       "type": [
         "null",
         "string"
       ]
     },
-    "Unit Prices": {
+    "unit_prices": {
       "type": [
         "null",
         "string"
       ]
     },
-    "Quantities": {
+    "quantities": {
       "type": [
         "null",
         "string"

@@ -73,3 +73,23 @@ def advance_date_by_microsecond(date: str) -> str:
     new_dt = singer.utils.strptime_to_utc(date) + datetime.timedelta(microseconds=1)
 
     return singer.utils.strftime(new_dt)
+
+
+def _convert_to_snake_case(key: str) -> str:
+    """
+    Takes in a string and will convert it to snake case.
+
+    :param key: The string to convert
+    :return: A string converted to snake case
+    """
+    return '_'.join(key.split(' ')).lower()
+
+
+def transform_keys_to_snake_case(record: dict) -> None:
+    """
+    Transforms all the keys of a dictionary to snake case.
+
+    :param record: The dictionary to transform
+    """
+    for key in list(record.keys()):
+        record[_convert_to_snake_case(key)] = record.pop(key)

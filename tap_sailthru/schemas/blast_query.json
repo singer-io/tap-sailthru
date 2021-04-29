@@ -16,7 +16,7 @@
         "integer"
       ]
     },
-    "email hash": {
+    "email_hash": {
       "type": [
         "null",
         "string"

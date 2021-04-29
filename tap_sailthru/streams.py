@@ -18,7 +18,7 @@ from tap_sailthru.client.error import SailthruJobTimeout
 from tap_sailthru.transform import (advance_date_by_microsecond,
                                     flatten_user_response,
                                     get_start_and_end_date_params,
-                                    rfc2822_to_datetime, sort_by_rfc2822)
+                                    rfc2822_to_datetime, sort_by_rfc2822, transform_keys_to_snake_case)
 
 LOGGER = singer.get_logger()
 
@@ -172,6 +172,7 @@ class IncrementalStream(BaseStream):
             for record in self.get_records(bookmark_datetime):
                 record_datetime = rfc2822_to_datetime(record[self.replication_key])
                 if record_datetime >= bookmark_datetime:
+                    transform_keys_to_snake_case(record)
                     transformed_record = transformer.transform(record,
                                                                stream_schema,
                                                                stream_metadata)
@@ -215,6 +216,7 @@ class FullTableStream(BaseStream):
         """
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in self.get_records():
+                transform_keys_to_snake_case(record)
                 transformed_record = transformer.transform(record, stream_schema, stream_metadata)
                 singer.write_record(self.tap_stream_id, transformed_record)
                 counter.increment()
@@ -370,7 +372,7 @@ class BlastSaveList(FullTableStream):
     Docs: https://getstarted.sailthru.com/developers/api/job/#blast-save-list
     """
     tap_stream_id = 'blast_save_list'
-    key_properties = ['Profile Id']
+    key_properties = ['profile_id']
     params = {
         'job': 'export_list_data',
         'list': '{list_name}',
@@ -421,7 +423,7 @@ class PurchaseLog(IncrementalStream):
     Docs: https://getstarted.sailthru.com/developers/api/job/#export-purchase-log
     """
     tap_stream_id = 'purchase_log'
-    key_properties = ['Extid']
+    key_properties = ['extid']
     replication_key = 'Date'
     valid_replication_keys = ['Date']
     params = {
