@@ -389,7 +389,6 @@ class BlastSaveList(FullTableStream):
 
             yield from self.process_job_csv(export_url=export_url)
 
-# TODO: CRITICAL Record does not pass schema validation: Message 0 is missing key property profile_id
 class Users(FullTableStream):
     """
     Retrieve user profile data.

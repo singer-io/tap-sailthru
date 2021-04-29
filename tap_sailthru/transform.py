@@ -52,7 +52,7 @@ def flatten_user_response(response: dict) -> dict:
     """
 
     return {
-        'user_id': response.get('keys', {}).get('sid'),
+        'profile_id': response.get('keys', {}).get('sid'),
         'cookie': response.get('keys', {}).get('cookie'),
         'email': response.get('keys', {}).get('email'),
         'vars': response.get('vars'),
