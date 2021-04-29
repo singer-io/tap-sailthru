@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+Implements the Sailtru client class
+"""
 
 import hashlib
 
-from .error import SailthruClientError
-from .http import sailthru_http_request
+from tap_sailthru.client.error import SailthruClientError
+from tap_sailthru.client.http import sailthru_http_request
 
 try:
     import simplejson as json
@@ -43,8 +46,9 @@ def get_signature_hash(params, secret):
     """
     return hashlib.md5(get_signature_string(params, secret)).hexdigest()
 
-
-class SailthruClient(object):
+# pylint: disable=too-many-public-methods
+# pylint: disable=missing-class-docstring
+class SailthruClient:
 
     """
     This class makes HTTP Request to Sailthru API server
@@ -64,6 +68,7 @@ class SailthruClient(object):
         self.request_timeout = request_timeout
         self.last_rate_limit_info = {}
 
+    # pylint: disable=too-many-arguments
     def send(self, template, email, _vars=None, options=None, schedule_time=None, limit=None):
         """
         Remotely send an email template to a single email address.
@@ -87,6 +92,7 @@ class SailthruClient(object):
             data['schedule_time'] = schedule_time
         return self.api_post('send', data)
 
+    # pylint: disable=too-many-arguments
     def multi_send(self, template, emails, _vars=None, evars=None, schedule_time=None, options=None):
         """
         Remotely send an email template to multiple email addresses.
@@ -154,6 +160,7 @@ class SailthruClient(object):
         data = {'email': email}
         return self._api_request('email', data, 'GET')
 
+    # pylint: disable=too-many-arguments
     def set_email(self, email, _vars=None, lists=None, templates=None, verified=0, optout=None, send=None, send_vars=None):
         """
         DEPRECATED!
@@ -197,7 +204,8 @@ class SailthruClient(object):
         data['id'] = idvalue
         return self.api_post('user', data)
 
-    def schedule_blast(self, name, list, schedule_time, from_name, from_email, subject, content_html, content_text, options=None):
+    # pylint: disable=too-many-arguments
+    def schedule_blast(self, name, list_name, schedule_time, from_name, from_email, subject, content_html, content_text, options=None):
         """
         Schedule a mass mail blast
         http://docs.sailthru.com/api/blast
@@ -228,7 +236,7 @@ class SailthruClient(object):
         options = options or {}
         data = options.copy()
         data['name'] = name
-        data['list'] = list
+        data['list'] = list_name
         data['schedule_time'] = schedule_time
         data['from_name'] = from_name
         data['from_email'] = from_email
@@ -267,7 +275,8 @@ class SailthruClient(object):
         data['schedule_time'] = schedule_time
         return self.api_post('blast', data)
 
-    def update_blast(self, blast_id, name=None, list=None, schedule_time=None, from_name=None, from_email=None,
+    # pylint: disable=too-many-arguments
+    def update_blast(self, blast_id, name=None, list_name=None, schedule_time=None, from_name=None, from_email=None,
                      subject=None, content_html=None, content_text=None, options=None):
         """
         updates existing blast
@@ -302,8 +311,8 @@ class SailthruClient(object):
         data['blast_id'] = blast_id
         if name is not None:
             data['name'] = name
-        if list is not None:
-            data['list'] = list
+        if list_name is not None:
+            data['list'] = list_name
         if schedule_time is not None:
             data['schedule_time'] = schedule_time
         if from_name is not None:
@@ -432,12 +441,13 @@ class SailthruClient(object):
             data['names'] = 1
         return self.api_post('contacts', data)
 
+    # pylint: disable=too-many-arguments
     def push_content(self, title, url,
                      images=None, date=None, expire_date=None,
                      description=None, location=None, price=None,
                      tags=None,
                      author=None, site_name=None,
-                     spider=None, vars=None):
+                     spider=None, variables=None):
 
         """
         Push a new piece of content to Sailthru.
@@ -460,7 +470,7 @@ class SailthruClient(object):
         @param vars: replaceable vars dictionary
 
         """
-        vars = vars or {}
+        variables = variables or {}
         data = {'title': title,
                 'url': url}
         if images is not None:
@@ -483,8 +493,8 @@ class SailthruClient(object):
             data['spider'] = 1
         if tags is not None:
             data['tags'] = ",".join(tags) if isinstance(tags, list) else tags
-        if len(vars) > 0:
-            data['vars'] = vars.copy()
+        if len(variables) > 0:
+            data['vars'] = variables.copy()
         return self.api_post('content', data)
 
     def get_alert(self, email):
@@ -493,34 +503,35 @@ class SailthruClient(object):
         """
         return self.api_get('alert', {'email': email})
 
-    def save_alert(self, email, type, template, when=None, options=None):
+    # pylint: disable=too-many-arguments
+    def save_alert(self, email, alert_type, template, when=None, options=None):
         """
         Add a new alert to a user. You can add either a realtime or a summary alert (daily/weekly).
         http://docs.sailthru.com/api/alert
 
         Usage:
             email = 'praj@sailthru.com'
-            type = 'weekly'
+            alert_type = 'weekly'
             template = 'default'
             when = '+5 hours'
             alert_options = {'match': {}, 'min': {}, 'max': {}, 'tags': []}
-            alert_options['match']['type'] = 'shoes'
+            alert_options['match']['alert_type'] = 'shoes'
             alert_options['min']['price'] = 20000 #cents
             alert_options['tags'] = ['red', 'blue', 'green']
-            response = client.save_alert(email, type, template, when, alert_options)
+            response = client.save_alert(email, alert_type, template, when, alert_options)
 
         @param email: Email value
-        @param type: daily|weekly|realtime
+        @param alert_type: daily|weekly|realtime
         @param template: template name
         @param when: date string required for summary alert (daily/weekly)
-        @param options: dictionary value for adding tags, max price, min price, match type
+        @param options: dictionary value for adding tags, max price, min price, match alert_type
         """
         options = options or {}
         data = options.copy()
         data['email'] = email
-        data['type'] = type
+        data['type'] = alert_type
         data['template'] = template
-        if type in ['weekly', 'daily']:
+        if alert_type in ['weekly', 'daily']:
             data['when'] = when
         return self.api_post('alert', data)
 
@@ -532,6 +543,7 @@ class SailthruClient(object):
                 'alert_id': alert_id}
         return self.api_delete('alert', data)
 
+    # pylint: disable=too-many-arguments
     def purchase(self, email, items=None, incomplete=None, message_id=None, options=None, extid=None):
         """
         Record that a user has made a purchase, or has added items to their purchase total.
@@ -565,14 +577,14 @@ class SailthruClient(object):
                 'purchase_key': purchase_key}
         return self.api_get('purchase', data)
 
-    def stats_list(self, list=None, date=None, headers=None):
+    def stats_list(self, list_name=None, date=None, headers=None):
         """
         Retrieve information about your subscriber counts on a particular list, on a particular day.
         http://docs.sailthru.com/api/stat
         """
         data = {'stat': 'list'}
-        if list is not None:
-            data['list'] = list
+        if list_name is not None:
+            data['list'] = list_name
         if date is not None:
             data['date'] = date
         return self._stats(data, headers)
@@ -614,6 +626,7 @@ class SailthruClient(object):
         """
         return self.api_get('stats', data, headers)
 
+    # pylint: disable=too-many-return-statements
     def receive_verify_post(self, post_params):
         """
         Returns true if the incoming request is an authenticated verify post.
@@ -696,6 +709,7 @@ class SailthruClient(object):
 
         return True
 
+    # pylint: disable=too-many-return-statements
     def receive_hardbounce_post(self, post_params):
         """
         Hard bounce postbacks
@@ -765,8 +779,8 @@ class SailthruClient(object):
         binary_data_param = binary_data_param or []
         if binary_data_param:
             return self.api_post_multipart(action, data, binary_data_param)
-        else:
-            return self._api_request(action, data, 'POST')
+
+        return self._api_request(action, data, 'POST')
 
     def api_post_multipart(self, action, data, binary_data_param):
         """
@@ -815,7 +829,7 @@ class SailthruClient(object):
         url = self.api_url + '/' + action
         file_data = file_data or {}
         response = sailthru_http_request(url, data, method, file_data, headers, self.request_timeout)
-        if (action in self.last_rate_limit_info):
+        if action in self.last_rate_limit_info:
             self.last_rate_limit_info[action][method] = response.get_rate_limit_headers()
         else:
             self.last_rate_limit_info[action] = { method : response.get_rate_limit_headers() }
