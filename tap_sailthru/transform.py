@@ -73,16 +73,3 @@ def advance_date_by_microsecond(date: str) -> str:
     new_dt = singer.utils.strptime_to_utc(date) + datetime.timedelta(microseconds=1)
 
     return singer.utils.strftime(new_dt)
-
-
-def get_purchase_key_type(record: dict) -> str:
-    """
-    Get's the purchase key type field name for a purchase log record.
-
-    :param record: A dictionary containing a purchase log record
-    :return: The purchase key type
-    """
-    if record.get('Extid') is not None:
-        return 'Extid'
-
-    return 'Sid'

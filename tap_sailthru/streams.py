@@ -454,38 +454,6 @@ class PurchaseLog(IncrementalStream):
             start_datetime += timedelta(days=1)
 
 
-class Purchases(IncrementalStream):
-    """
-    Retrieve data on a purchase by the purchase key type (sid vs extid).
-
-    Docs: https://getstarted.sailthru.com/developers/api/purchase/
-    """
-    tap_stream_id = 'purchases'
-    key_properties = ['item_id']
-    replication_key = 'time'
-    valid_replication_keys = ['time']
-    parent = PurchaseLog
-    batched = True
-
-    def get_records(self, bookmark_datetime=None, is_parent=False):
-
-        for record in self.get_parent_data(bookmark_datetime):
-            purchase_key = record.get('purchase_key')
-            purchase_id = record.get(purchase_key)
-            if not purchase_id:
-                LOGGER.warning("No purchase_id found for record")
-                continue
-            # TODO: sort responses
-            response = self.client.get_purchase(purchase_id,
-                                                purchase_key=purchase_key.lower()).get_body()
-
-            if response.get("error"):
-                # pylint: disable=logging-fstring-interpolation
-                LOGGER.warning(f"error with record: {response['error']}")
-                continue
-
-            yield response
-
 STREAMS = {
     'ad_targeter_plans': AdTargeterPlans,
     'blasts': Blasts,
@@ -495,5 +463,4 @@ STREAMS = {
     'blast_save_list': BlastSaveList,
     'users': Users,
     'purchase_log': PurchaseLog,
-    'purchases': Purchases,
 }
