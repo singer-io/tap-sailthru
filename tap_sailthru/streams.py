@@ -385,7 +385,7 @@ class BlastSaveList(FullTableStream):
 
             yield from self.process_job_csv(export_url=export_url)
 
-
+# TODO: CRITICAL Record does not pass schema validation: Message 0 is missing key property profile_id
 class Users(FullTableStream):
     """
     Retrieve user profile data.
@@ -477,7 +477,7 @@ class Purchases(IncrementalStream):
             purchase_key = record.get('purchase_key')
             purchase_id = record.get(purchase_key)
             if not purchase_id:
-                LOGGER.warninging("No purchase_id found for record")
+                LOGGER.warning("No purchase_id found for record")
                 continue
             # TODO: sort responses
             response = self.client.get_purchase(purchase_id,
@@ -485,7 +485,7 @@ class Purchases(IncrementalStream):
 
             if response.get("error"):
                 # pylint: disable=logging-fstring-interpolation
-                LOGGER.warninging(f"error with record: {response['error']}")
+                LOGGER.warning(f"error with record: {response['error']}")
                 continue
 
             yield response
