@@ -22,12 +22,6 @@
         "string"
       ]
     },
-    "Sid": {
-      "type": [
-        "null",
-        "string"
-      ]
-    },
     "Message ID": {
       "type": [
         "null",

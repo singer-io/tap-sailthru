@@ -418,7 +418,7 @@ class PurchaseLog(IncrementalStream):
     Docs: https://getstarted.sailthru.com/developers/api/job/#export-purchase-log
     """
     tap_stream_id = 'purchase_log'
-    key_properties = ['purchase_id']
+    key_properties = ['Extid']
     replication_key = 'Date'
     valid_replication_keys = ['Date']
     params = {
@@ -445,15 +445,8 @@ class PurchaseLog(IncrementalStream):
             # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f'export_url: {export_url}')
 
-            records = sort_by_rfc2822(
+            yield from sort_by_rfc2822(
                         self.process_job_csv(export_url=export_url), 'Date')
-            for record in records:
-                # Purchase key could be Extid or Sid
-                purchase_key = get_purchase_key_type(record)
-                # Add purchase_key field
-                record.update({'purchase_key': purchase_key})
-
-                yield record
 
             start_datetime += timedelta(days=1)
 
