@@ -6,6 +6,7 @@ import csv
 import datetime
 import time
 from datetime import timedelta
+from functools import lru_cache
 from typing import Any, Iterator
 
 import requests
@@ -16,7 +17,6 @@ from tap_sailthru.client import SailthruClient
 from tap_sailthru.client.error import SailthruJobTimeout
 from tap_sailthru.transform import (advance_date_by_microsecond,
                                     flatten_user_response,
-                                    get_purchase_key_type,
                                     get_start_and_end_date_params,
                                     rfc2822_to_datetime, sort_by_rfc2822)
 
@@ -346,15 +346,19 @@ class Lists(FullTableStream):
     tap_stream_id = 'lists'
     key_properties = ['list_id']
 
-    # TODO: might be good candiate for lru
+    @lru_cache
+    def get_lists(self):
+        return self.client.get_lists().get_body()
+
     def get_records(self, bookmark_datetime=None, is_parent=False):
+
+        response = self.get_lists()
+
         # Will just return list names if called by child stream
         if is_parent:
-            response = self.client.get_lists().get_body()
             for record in response['lists']:
                 yield record['name']
         else:
-            response = self.client.get_lists().get_body()
             yield from response['lists']
 
 
