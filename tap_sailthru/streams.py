@@ -158,16 +158,12 @@ class IncrementalStream(BaseStream):
         :param transformer: A singer Transformer object
         :return: State data in the form of a dictionary
         """
-        start_time = singer.get_bookmark(state,
+        start_date = singer.get_bookmark(state,
                                          self.tap_stream_id,
                                          self.replication_key,
                                          config['start_date'])
-        # Since records can contain the same 'modify_time' timestamp due to batch uploads
-        # we need to use >= to compare and write records and in order to avoid re-syncing
-        # records from the previous run, we add a microsecond to the start date
-        # TODO: don't do this
-        bookmark_date = advance_date_by_microsecond(start_time)
-        bookmark_datetime = singer.utils.strptime_to_utc(bookmark_date)
+
+        bookmark_datetime = singer.utils.strptime_to_utc(start_date)
         max_datetime = bookmark_datetime
 
         with metrics.record_counter(self.tap_stream_id) as counter:
@@ -307,10 +303,6 @@ class BlastQuery(FullTableStream):
                 continue
             export_url = self.get_job_url(job_id=response['job_id'])
 
-            # pylint: disable=logging-fstring-interpolation
-            #TODO: don't log these
-            LOGGER.info(f'export_url: {export_url}')
-
             # Add blast id to each record
             yield from self.process_job_csv(export_url=export_url,
                                             parent_params={'blast_id': blast_id})
@@ -329,7 +321,7 @@ class BlastRepeats(IncrementalStream):
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
         response = self.client.get_blast_repeats().get_body()
-        # TODO: what happens if KeyError
+        # TODO: what happens if KeyError? Ensure reponse not empty in client?
         yield from response.get('repeats')
 
 
@@ -380,10 +372,6 @@ class BlastSaveList(FullTableStream):
 
             response = self.post_job(parameter=self.params['list'])
             export_url = self.get_job_url(job_id=response['job_id'])
-            # pylint: disable=logging-fstring-interpolation
-            # TODO: remove
-            LOGGER.info(f'export_url: {export_url}')
-
             yield from self.process_job_csv(export_url=export_url)
 
 class Users(FullTableStream):
@@ -442,13 +430,7 @@ class PurchaseLog(IncrementalStream):
             response = self.post_job(parameter=(self.params['start_date'],
                                      self.params['end_date']))
             export_url = self.get_job_url(job_id=response['job_id'])
-            # pylint: disable=logging-fstring-interpolation
-            # TODO: remove
-            LOGGER.info(f'export_url: {export_url}')
-
-            # TODO: don't sort
-            yield from sort_by_rfc2822(
-                        self.process_job_csv(export_url=export_url), 'Date')
+            yield from self.process_job_csv(export_url=export_url)
 
             start_datetime += timedelta(days=1)
 

@@ -52,7 +52,7 @@ def flatten_user_response(response: dict) -> dict:
     """
 
     return {
-        # TODO: should we keep date value from lists?
+        # TODO: should we keep date value from lists key? ask brian
         'profile_id': response.get('keys', {}).get('sid'),
         'cookie': response.get('keys', {}).get('cookie'),
         'email': response.get('keys', {}).get('email'),

@@ -14,7 +14,7 @@ def sync(config, state, catalog):
     """ Sync data from tap source """
 
     api_key, api_secret = config.get('api_key'), config.get('api_secret')
-    client = SailthruClient(api_key, api_secret)
+    client = SailthruClient(api_key, api_secret, config.get('user_agent'))
 
     with Transformer() as transformer:
         for stream in catalog.get_selected_streams(state):

@@ -61,9 +61,10 @@ class SailthruClient:
         client = SailthruClient(api_key, api_secret)
     """
 
-    def __init__(self, api_key, secret, api_url=None, request_timeout=10):
+    def __init__(self, api_key, secret, user_agent, api_url=None, request_timeout=10):
         self.api_key = api_key
         self.secret = secret
+        self.user_agent = user_agent
         self.api_url = api_url if api_url else 'https://api.sailthru.com'
         self.request_timeout = request_timeout
         self.last_rate_limit_info = {}
@@ -828,7 +829,7 @@ class SailthruClient:
     def _http_request(self, action, data, method, file_data=None, headers=None):
         url = self.api_url + '/' + action
         file_data = file_data or {}
-        response = sailthru_http_request(url, data, method, file_data, headers, self.request_timeout)
+        response = sailthru_http_request(url, data, method, self.user_agent, file_data, headers, self.request_timeout)
         if action in self.last_rate_limit_info:
             self.last_rate_limit_info[action][method] = response.get_rate_limit_headers()
         else:

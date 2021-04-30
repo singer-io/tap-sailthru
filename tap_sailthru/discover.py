@@ -34,7 +34,6 @@ def _get_replication_key_from_meta(schema_meta: list) -> str:
     """
     Gets the valid-replication-keys from the schema metadata.
     """
-    # TODO: is the if statement necessary?
     if _get_replication_method_from_meta(schema_meta) == 'INCREMENTAL':
         return schema_meta[0].get('metadata').get('valid-replication-keys')[0]
     return None

@@ -8,7 +8,7 @@ from singer import utils
 from tap_sailthru.discover import discover
 from tap_sailthru.sync import sync
 
-REQUIRED_CONFIG_KEYS = ["start_date", "api_key", "api_secret"]
+REQUIRED_CONFIG_KEYS = ["start_date", "api_key", "api_secret", "user_agent"]
 LOGGER = singer.get_logger()
 
 
