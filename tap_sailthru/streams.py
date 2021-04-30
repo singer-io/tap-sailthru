@@ -14,7 +14,7 @@ import singer
 from singer import Transformer, metrics
 
 from tap_sailthru.client import SailthruClient
-from tap_sailthru.client.error import SailthruJobTimeout
+from tap_sailthru.old_client.error import SailthruJobTimeout
 from tap_sailthru.transform import (advance_date_by_microsecond,
                                     flatten_user_response,
                                     get_start_and_end_date_params,

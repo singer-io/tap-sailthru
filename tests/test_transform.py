@@ -72,7 +72,7 @@ def test_flatten_user_response():
             'engagement': 'disengaged',
             'optout_email': 'none'},
         'expected': {
-            'user_id': 'pid1234',
+            'profile_id': 'pid1234',
             'cookie': 'cookie1234',
             'email': 'random.user@bytecode.io',
             'vars': None,
@@ -92,7 +92,7 @@ def test_flatten_user_response():
             'engagement': None,
             'optout_email': None},
         'expected': {
-            'user_id': None,
+            'profile_id': None,
             'cookie': None,
             'email': None,
             'vars': None,
