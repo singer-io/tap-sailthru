@@ -35,8 +35,9 @@ def flatten_nested_hash(hash_table):
         return field
     return flatten(hash_table, False)
 
+# TODO: retry 500s, some client errors, 2 backoff decorators?
 # pylint: disable=too-many-arguments
-@backoff.on_exception(backoff.expo, SailthruClient429Error, max_tries=5, factor=2)
+@backoff.on_exception(backoff.expo, (SailthruClient429Error), max_tries=2, factor=2)
 def sailthru_http_request(url, data, method, file_data=None, headers=None, request_timeout=10):
     """
     Perform an HTTP GET / POST / DELETE request
@@ -44,6 +45,8 @@ def sailthru_http_request(url, data, method, file_data=None, headers=None, reque
     data = flatten_nested_hash(data)
     method = method.upper()
     params, data = (None, data) if method == 'POST' else (data, None)
+    # TODO: use User-Agent from config; look for documentation for format
+    # user_agent in config
     sailthru_headers = {'User-Agent': 'Sailthru API Python Client 2.3.5;'
                         f' Python Version: {platform.python_version()}'}
     if headers and isinstance(headers, dict):

@@ -103,7 +103,8 @@ class BaseStream:
             if (now - job_start_time).seconds > timeout:
                 # pylint: disable=logging-fstring-interpolation
                 LOGGER.critical(f'Request with job_id {job_id}'
-                                ' exceeded {timeout} second timeout')
+                                f' exceeded {timeout} second timeout'
+                                f'latest_status: {status}')
                 raise SailthruJobTimeout
             time.sleep(1)
 
@@ -164,6 +165,7 @@ class IncrementalStream(BaseStream):
         # Since records can contain the same 'modify_time' timestamp due to batch uploads
         # we need to use >= to compare and write records and in order to avoid re-syncing
         # records from the previous run, we add a microsecond to the start date
+        # TODO: don't do this
         bookmark_date = advance_date_by_microsecond(start_time)
         bookmark_datetime = singer.utils.strptime_to_utc(bookmark_date)
         max_datetime = bookmark_datetime
@@ -263,21 +265,14 @@ class Blasts(IncrementalStream):
             blast_ids = []
             for status in self.params['statuses']:
                 response = self.client.get_blasts(status).get_body()
-                ids = [blast.get('blast_id') for blast in response['blasts']]
-                blast_ids.extend(ids)
-
-            yield from blast_ids
+                yield from (blast.get('blast_id') for blast in response['blasts'])
         else:
             blasts = []
             for status in self.params['statuses']:
                 response = self.client.get_blasts(status).get_body()
                 # Add the blast status to each blast record
-                response['blasts'] = [dict(item, status=status) for item in response['blasts']]
-                blasts.extend(response['blasts'])
+                yield from (dict(item, status=status) for item in response['blasts'])
 
-            sorted_blasts = sort_by_rfc2822(blasts, 'modify_time')
-
-            yield from sorted_blasts
 
 class BlastQuery(FullTableStream):
     """
@@ -300,18 +295,20 @@ class BlastQuery(FullTableStream):
             self.params['blast_id'] = blast_id
 
             response = self.post_job(parameter=blast_id)
+            # TODO: handle error codes
             if response.get("error"):
                 # https://getstarted.sailthru.com/developers/api/job/#Error_Codes
                 # Error code 99 = You may not export a blast that has been sent
                 # pylint: disable=logging-fstring-interpolation
                 LOGGER.warning(f"error code: {response.get('error')} "
-                            "- message: {response.get('errormsg')}")
+                            f"- message: {response.get('errormsg')}")
                 # pylint: disable=logging-fstring-interpolation
                 LOGGER.info(f"Skipping blast_id: {blast_id}")
                 continue
             export_url = self.get_job_url(job_id=response['job_id'])
 
             # pylint: disable=logging-fstring-interpolation
+            #TODO: don't log these
             LOGGER.info(f'export_url: {export_url}')
 
             # Add blast id to each record
@@ -332,11 +329,8 @@ class BlastRepeats(IncrementalStream):
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
         response = self.client.get_blast_repeats().get_body()
-        repeats = response['repeats']
-        # Sort repeats by 'modify_time' field
-        sorted_repeats = sort_by_rfc2822(repeats, sort_key='modify_time')
-
-        yield from sorted_repeats
+        # TODO: what happens if KeyError
+        yield from response.get('repeats')
 
 
 class Lists(FullTableStream):
@@ -387,6 +381,7 @@ class BlastSaveList(FullTableStream):
             response = self.post_job(parameter=self.params['list'])
             export_url = self.get_job_url(job_id=response['job_id'])
             # pylint: disable=logging-fstring-interpolation
+            # TODO: remove
             LOGGER.info(f'export_url: {export_url}')
 
             yield from self.process_job_csv(export_url=export_url)
@@ -448,8 +443,10 @@ class PurchaseLog(IncrementalStream):
                                      self.params['end_date']))
             export_url = self.get_job_url(job_id=response['job_id'])
             # pylint: disable=logging-fstring-interpolation
+            # TODO: remove
             LOGGER.info(f'export_url: {export_url}')
 
+            # TODO: don't sort
             yield from sort_by_rfc2822(
                         self.process_job_csv(export_url=export_url), 'Date')
 
