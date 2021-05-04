@@ -2,9 +2,9 @@
 # http error codes
 
 import hashlib
-from os import stat
+import json
 from typing import Union
-import requests
+from requests import Session
 
 # pylint: disable=missing-class-docstring
 class SailthruClientError(Exception):
@@ -24,10 +24,12 @@ class SailthruJobTimeoutError(Exception):
 
 
 class SailthruClient:
+    base_url = 'https://api.sailthru.com'
 
     def __init__(self, api_key, api_secret, user_agent) -> None:
         self.__api_key = api_key
         self.__api_secret = api_secret
+        self.session = Session()
         self.headers = {'User-Agent': user_agent}
 
     def extract_params(self, params: Union[list, dict]) -> list:
@@ -69,3 +71,41 @@ class SailthruClient:
         :return: A hashed string
         """
         return hashlib.md5(self.get_signature_string(params, secret)).hexdigest()
+
+    def get_lists(self) -> dict:
+        """
+        Queries the /list endpoint to get all the lists in Sailthru.
+
+        Docs: https://getstarted.sailthru.com/developers/api/list/
+
+        :return: A dict containing the API response.
+        """
+        return self.get('/list', None)
+
+    def get(self, endpoint, data):
+        return self._build_request(endpoint, data, 'GET')
+
+    def post(self, endpoint, data):
+        return self._build_request(endpoint, data, 'GET')
+
+    def _build_request(self, endpoint, data, method):
+        url = f"{self.base_url}/{endpoint}"
+        payload = self._prepare_payload(data)
+        return self._make_request(url, payload, method)
+
+    def _make_request(self, url, payload, method):
+        response = self.session.request(method=method,
+                                        url=url,
+                                        params=payload,
+                                        headers=self.headers)
+        return response.json()
+
+    def _prepare_payload(self, data):
+        payload = {
+            'api_key': self.__api_key,
+            'format': 'json',
+            'json': json.dumps(data)
+        }
+        signature = self.get_signature_hash(payload, self.__api_secret)
+        payload['sig'] = signature
+        return payload
