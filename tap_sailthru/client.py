@@ -164,15 +164,15 @@ class SailthruClient:
 
         return self.post('/job', params)
 
-    def get(self, endpoint, data):
-        return self._build_request(endpoint, data, 'GET')
+    def get(self, endpoint, params):
+        return self._build_request(endpoint, params, 'GET')
 
-    def post(self, endpoint, data):
-        return self._build_request(endpoint, data, 'GET')
+    def post(self, endpoint, params):
+        return self._build_request(endpoint, params, 'GET')
 
-    def _build_request(self, endpoint, data, method):
+    def _build_request(self, endpoint, params, method):
         url = f"{self.base_url}/{endpoint}"
-        payload = self._prepare_payload(data)
+        payload = self._prepare_payload(params)
         return self._make_request(url, payload, method)
 
     def _make_request(self, url, payload, method):
