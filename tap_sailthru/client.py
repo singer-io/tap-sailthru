@@ -4,10 +4,21 @@
 import hashlib
 import json
 from typing import Union
+
+import backoff
 from requests import Session
+
+
+# Backoff retries
+MAX_TRIES_5XX_ERRORS = 2
+MAX_TRIES_4XX_ERRORS = 2
 
 # pylint: disable=missing-class-docstring
 class SailthruClientError(Exception):
+    pass
+
+# pylint: disable=missing-class-docstring
+class SailthruClientStatsNotReadyError(Exception):
     pass
 
 # pylint: disable=missing-class-docstring
@@ -175,13 +186,31 @@ class SailthruClient:
         payload = self._prepare_payload(params)
         return self._make_request(url, payload, method)
 
+
+    @backoff.on_exception(backoff.expo,
+                          SailthruServer5xxError,
+                          max_tries=MAX_TRIES_5XX_ERRORS,
+                          factor=2)
+    @backoff.on_exception(backoff.expo,
+                          (SailthruClient429Error,
+                          SailthruClientStatsNotReadyError),
+                          max_tries=MAX_TRIES_4XX_ERRORS,
+                          factor=2)
     def _make_request(self, url, payload, method):
         response = self.session.request(method=method,
                                         url=url,
                                         params=payload,
                                         headers=self.headers)
         # TODO: handle errors and nonetype responses
-        response.raise_for_status()
+        # response.raise_for_status()
+        if response.status_code == 429:
+            raise SailthruClient429Error
+        if response.status_code >= 500:
+            raise SailthruServer5xxError
+        if response.status_code == 400 and response.json().get("error") == 99:
+            raise SailthruClientStatsNotReadyError
+        if response.status_code != 200:
+            raise SailthruClientError
 
         return response.json()
 
