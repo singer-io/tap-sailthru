@@ -77,11 +77,11 @@ class BaseStream:
         if parameter:
             # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f'Starting background job for {job_name},'
-                        ' parameter={parameter}')
+                        f'parameter={parameter}')
         else:
             # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f'Starting background job for {job_name}')
-        return self.client.create_job(self.params).get_body()
+        return self.client.create_job(self.params)
 
     def get_job_url(self, job_id: str, timeout: int = 600) -> str:
         """
@@ -95,7 +95,7 @@ class BaseStream:
         status = ''
         job_start_time = singer.utils.now()
         while status != 'completed':
-            response = self.client.get_job(job_id).get_body()
+            response = self.client.get_job({'job_id': job_id})
             status = response.get('status')
             # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f'Job report status: {status}')
@@ -105,7 +105,7 @@ class BaseStream:
                 LOGGER.critical(f'Request with job_id {job_id}'
                                 f' exceeded {timeout} second timeout'
                                 f'latest_status: {status}')
-                raise SailthruJobTimeout
+                raise SailthruJobTimeoutError
             time.sleep(1)
 
         return response.get('export_url')
@@ -232,7 +232,7 @@ class AdTargeterPlans(FullTableStream):
     key_properties = ['plan_id']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
-        response = self.client.get_ad_targeter_plans().get_body()
+        response = self.client.get_ad_targeter_plans()
         yield from response['ad_plans']
 
 
@@ -260,12 +260,12 @@ class Blasts(IncrementalStream):
         if is_parent:
             blast_ids = []
             for status in self.params['statuses']:
-                response = self.client.get_blasts(status).get_body()
+                response = self.client.get_blasts({'status': status})
                 yield from (blast.get('blast_id') for blast in response['blasts'])
         else:
             blasts = []
             for status in self.params['statuses']:
-                response = self.client.get_blasts(status).get_body()
+                response = self.client.get_blasts({'status': status})
                 # Add the blast status to each blast record
                 yield from (dict(item, status=status) for item in response['blasts'])
 
@@ -320,7 +320,7 @@ class BlastRepeats(IncrementalStream):
     valid_replication_keys = ['modify_time']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
-        response = self.client.get_blast_repeats().get_body()
+        response = self.client.get_blast_repeats()
         # TODO: what happens if KeyError? Ensure reponse not empty in client?
         yield from response.get('repeats')
 
@@ -336,7 +336,7 @@ class Lists(FullTableStream):
 
     @lru_cache
     def get_lists(self):
-        return self.client.get_lists().get_body()
+        return self.client.get_lists()
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
 
@@ -394,7 +394,7 @@ class Users(FullTableStream):
 
         for record in self.get_parent_data():
             profile_id = record['Profile Id']
-            response = self.client.get_user(profile_id).get_body()
+            response = self.client.get_user({'id': profile_id})
             yield flatten_user_response(response)
 
 
