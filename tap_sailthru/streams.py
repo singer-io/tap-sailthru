@@ -105,7 +105,7 @@ class BaseStream:
                 LOGGER.critical(f'Request with job_id {job_id}'
                                 f' exceeded {timeout} second timeout'
                                 f'latest_status: {status}')
-                raise SailthruJobTimeoutError
+                raise SailthruJobTimeout
             time.sleep(1)
 
         return response.get('export_url')
@@ -295,9 +295,6 @@ class BlastQuery(FullTableStream):
             if response.get("error"):
                 # https://getstarted.sailthru.com/developers/api/job/#Error_Codes
                 # Error code 99 = You may not export a blast that has been sent
-                # pylint: disable=logging-fstring-interpolation
-                LOGGER.warning(f"error code: {response.get('error')} "
-                            f"- message: {response.get('errormsg')}")
                 # pylint: disable=logging-fstring-interpolation
                 LOGGER.info(f"Skipping blast_id: {blast_id}")
                 continue

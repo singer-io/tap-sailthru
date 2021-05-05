@@ -200,10 +200,13 @@ class SailthruClient:
                           factor=2)
     def _make_request(self, url, payload, method):
 
+        params, data = (None, payload) if method == 'POST' else (payload, None)
+
         with metrics.http_request_timer(url) as timer:
             response = self.session.request(method=method,
                                             url=url,
-                                            params=payload,
+                                            params=params,
+                                            data=data,
                                             headers=self.headers)
             timer.tags[metrics.Tag.http_status_code] = response.status_code
 
@@ -213,6 +216,9 @@ class SailthruClient:
             raise SailthruServer5xxError
         if response.status_code == 400 and response.json().get("error") == 99:
             raise SailthruClientStatsNotReadyError
+        if response.status_code == 403 and response.json().get("error") == 99:
+            LOGGER.warning(f"{response.json()}")
+            return response.json()
         if response.status_code != 200:
             LOGGER.info(f"status_code: {response.status_code} - "
                         f"response: {response.json()}")
