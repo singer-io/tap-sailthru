@@ -13,7 +13,7 @@ import requests
 import singer
 from singer import Transformer, metrics
 
-from tap_sailthru.client import SailthruClient
+from tap_sailthru.client import SailthruClient, SailthruClientError
 from tap_sailthru.transform import (flatten_user_response,
                                     get_start_and_end_date_params,
                                     rfc2822_to_datetime,
@@ -236,6 +236,9 @@ class AdTargeterPlans(FullTableStream):
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
         response = self.client.get_ad_targeter_plans()
+        if not response.get('ad_plans'):
+            LOGGER.critical('response is empty for ad_plans')
+            raise SailthruClientError
         yield from response['ad_plans']
 
 
@@ -261,16 +264,14 @@ class Blasts(IncrementalStream):
         # Will just return a list of blast_id if being called
         # by child stream
         if is_parent:
-            blast_ids = []
             for status in self.params['statuses']:
                 response = self.client.get_blasts({'status': status})
-                yield from (blast.get('blast_id') for blast in response['blasts'])
+                yield from (blast.get('blast_id') for blast in response.get('blasts'))
         else:
-            blasts = []
             for status in self.params['statuses']:
                 response = self.client.get_blasts({'status': status})
                 # Add the blast status to each blast record
-                yield from (dict(item, status=status) for item in response['blasts'])
+                yield from (dict(item, status=status) for item in response.get('blasts'))
 
 
 class BlastQuery(FullTableStream):
@@ -294,7 +295,6 @@ class BlastQuery(FullTableStream):
             self.params['blast_id'] = blast_id
 
             response = self.post_job(parameter=blast_id)
-            # TODO: handle error codes
             if response.get("error"):
                 # https://getstarted.sailthru.com/developers/api/job/#Error_Codes
                 # Error code 99 = You may not export a blast that has been sent
@@ -321,7 +321,9 @@ class BlastRepeats(IncrementalStream):
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
         response = self.client.get_blast_repeats()
-        # TODO: what happens if KeyError? Ensure reponse not empty in client?
+        if not response.get('repeats'):
+            LOGGER.critical("response is empty for blast_repeats")
+            raise SailthruClientError
         yield from response.get('repeats')
 
 
@@ -341,6 +343,9 @@ class Lists(FullTableStream):
     def get_records(self, bookmark_datetime=None, is_parent=False):
 
         response = self.get_lists()
+        if not response.get('lists'):
+            LOGGER.critical("response is empty for lists")
+            raise SailthruClientError
 
         # Will just return list names if called by child stream
         if is_parent:
@@ -393,6 +398,9 @@ class Users(FullTableStream):
                     is_parent: bool = None):
 
         for record in self.get_parent_data():
+            if not record.get('Profile Id'):
+                LOGGER.critical('no Profile Id for record')
+                continue
             profile_id = record['Profile Id']
             response = self.client.get_user({'id': profile_id})
             yield flatten_user_response(response)
