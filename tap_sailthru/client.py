@@ -4,6 +4,8 @@ Python client for Sailthru API
 
 import hashlib
 import json
+import math
+import sys
 from typing import Union
 
 import backoff
@@ -13,8 +15,7 @@ from singer import get_logger, metrics
 LOGGER = get_logger()
 
 # Backoff retries
-MAX_TRIES_5XX_ERRORS = 2
-MAX_TRIES_4XX_ERRORS = 2
+MAX_RETRIES = 3
 
 # pylint: disable=missing-class-docstring
 class SailthruClientError(Exception):
@@ -29,8 +30,24 @@ class SailthruClient429Error(Exception):
     pass
 
 # pylint: disable=missing-class-docstring
+class SailthruClientRateLimitError(Exception):
+    pass
+
+# pylint: disable=missing-class-docstring
 class SailthruServer5xxError(Exception):
     pass
+
+
+def retry_after_wait_gen():
+    while True:
+        # This is called in an except block so we can retrieve the exception
+        # and check it.
+        exc_info = sys.exc_info()
+        resp = exc_info[1].response
+        sleep_time_str = resp.headers.get('X-Rate-Limit-Remaining')
+        LOGGER.info(f'API rate limit exceeded -- sleeping for '
+                    f'{sleep_time_str} seconds')
+        yield math.floor(float(sleep_time_str))
 
 
 class SailthruClient:
@@ -191,14 +208,16 @@ class SailthruClient:
         return self._make_request(url, payload, method)
 
 
-    @backoff.on_exception(backoff.expo,
-                          SailthruServer5xxError,
-                          max_tries=MAX_TRIES_5XX_ERRORS,
+    @backoff.on_exception(retry_after_wait_gen,
+                          SailthruClientRateLimitError,
+                          max_tries=MAX_RETRIES,
                           factor=2)
     @backoff.on_exception(backoff.expo,
-                          (SailthruClient429Error,
+                          (SailthruClientError,
+                          SailthruClient429Error,
+                          SailthruServer5xxError,
                           SailthruClientStatsNotReadyError),
-                          max_tries=MAX_TRIES_4XX_ERRORS,
+                          max_tries=MAX_RETRIES,
                           factor=2)
     def _make_request(self, url, payload, method):
 
@@ -212,6 +231,14 @@ class SailthruClient:
                                             headers=self.headers)
             timer.tags[metrics.Tag.http_status_code] = response.status_code
 
+        # Check if we have hit a rate limit based on headers
+        if all(k in response.headers
+               for k in ('X-Rate-Limit-Limit',
+                         'X-Rate-Limit-Remaining',
+                         'X-Rate-Limit-Reset')):
+            LOGGER.warning('rate limit exceeded')
+            raise SailthruClientRateLimitError
+
         if response.status_code == 429:
             raise SailthruClient429Error
         if response.status_code >= 500:
@@ -223,9 +250,6 @@ class SailthruClient:
             LOGGER.warning(f"{response.json()}")
             return response.json()
         if response.status_code != 200:
-            # pylint: disable=logging-fstring-interpolation
-            LOGGER.info(f"status_code: {response.status_code} - "
-                        f"response: {response.json()}")
             raise SailthruClientError
 
         return response.json()
