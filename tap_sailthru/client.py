@@ -31,10 +31,6 @@ class SailthruClient429Error(Exception):
 class SailthruServer5xxError(Exception):
     pass
 
-# pylint: disable=missing-class-docstring
-class SailthruJobTimeoutError(Exception):
-    pass
-
 
 class SailthruClient:
     base_url = 'https://api.sailthru.com'

@@ -14,13 +14,16 @@ import singer
 from singer import Transformer, metrics
 
 from tap_sailthru.client import SailthruClient
-from tap_sailthru.old_client.error import SailthruJobTimeout
 from tap_sailthru.transform import (advance_date_by_microsecond,
                                     flatten_user_response,
                                     get_start_and_end_date_params,
                                     rfc2822_to_datetime, sort_by_rfc2822, transform_keys_to_snake_case)
 
 LOGGER = singer.get_logger()
+
+# pylint: disable=missing-class-docstring
+class SailthruJobTimeoutError(Exception):
+    pass
 
 class BaseStream:
     """
@@ -105,7 +108,7 @@ class BaseStream:
                 LOGGER.critical(f'Request with job_id {job_id}'
                                 f' exceeded {timeout} second timeout'
                                 f'latest_status: {status}')
-                raise SailthruJobTimeout
+                raise SailthruJobTimeoutError
             time.sleep(1)
 
         return response.get('export_url')
