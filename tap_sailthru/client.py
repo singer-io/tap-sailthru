@@ -27,11 +27,10 @@ class SailthruClientStatsNotReadyError(Exception):
 
 # pylint: disable=missing-class-docstring
 class SailthruClient429Error(Exception):
-    pass
-
-# pylint: disable=missing-class-docstring
-class SailthruClientRateLimitError(Exception):
-    pass
+    def __init__(self, message=None, response=None):
+        super().__init__(message)
+        self.message = message
+        self.response = response
 
 # pylint: disable=missing-class-docstring
 class SailthruServer5xxError(Exception):
@@ -209,12 +208,10 @@ class SailthruClient:
 
 
     @backoff.on_exception(retry_after_wait_gen,
-                          SailthruClientRateLimitError,
-                          max_tries=MAX_RETRIES,
-                          factor=2)
+                          SailthruClient429Error,
+                          max_tries=MAX_RETRIES)
     @backoff.on_exception(backoff.expo,
                           (SailthruClientError,
-                          SailthruClient429Error,
                           SailthruServer5xxError,
                           SailthruClientStatsNotReadyError),
                           max_tries=MAX_RETRIES,
@@ -231,16 +228,8 @@ class SailthruClient:
                                             headers=self.headers)
             timer.tags[metrics.Tag.http_status_code] = response.status_code
 
-        # Check if we have hit a rate limit based on headers
-        if all(k in response.headers
-               for k in ('X-Rate-Limit-Limit',
-                         'X-Rate-Limit-Remaining',
-                         'X-Rate-Limit-Reset')):
-            LOGGER.warning('rate limit exceeded')
-            raise SailthruClientRateLimitError
-
         if response.status_code == 429:
-            raise SailthruClient429Error
+            raise SailthruClient429Error("rate limit exceeded", response)
         if response.status_code >= 500:
             raise SailthruServer5xxError
         if response.status_code == 400 and response.json().get("error") == 99:
