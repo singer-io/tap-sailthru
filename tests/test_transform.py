@@ -2,10 +2,9 @@ import datetime
 
 import pytz
 
-from tap_sailthru.transform import (advance_date_by_microsecond,
-                                    flatten_user_response,
+from tap_sailthru.transform import (flatten_user_response,
                                     get_start_and_end_date_params,
-                                    rfc2822_to_datetime, sort_by_rfc2822)
+                                    rfc2822_to_datetime)
 
 
 def test_rfc2822_to_datetime():
@@ -27,32 +26,6 @@ def test_get_start_and_end_date_params():
 
     for test_case in test_cases:
         result = get_start_and_end_date_params(test_case['case'])
-
-        assert test_case['expected'] == result
-
-
-def test_sort_by_rfc2822():
-    test_cases = [
-        {'case': [
-            {'modify_time': 'Mon, 19 Apr 2021 06:03:15 -0000', 'random_value': 61},
-            {'modify_time': 'Wed, 07 Apr 2021 06:03:15 -0000', 'random_value': 11},
-            {'modify_time': 'Sun, 04 Apr 2021 06:03:15 -0000', 'random_value': 42},
-            {'modify_time': 'Thu, 15 Apr 2021 06:03:15 -0000', 'random_value': 81},
-            {'modify_time': 'Thu, 08 Apr 2021 06:03:15 -0000', 'random_value': 4},
-        ],
-        'expected': [
-            {'modify_time': 'Sun, 04 Apr 2021 06:03:15 -0000', 'random_value': 42},
-            {'modify_time': 'Wed, 07 Apr 2021 06:03:15 -0000', 'random_value': 11},
-            {'modify_time': 'Thu, 08 Apr 2021 06:03:15 -0000', 'random_value': 4},
-            {'modify_time': 'Thu, 15 Apr 2021 06:03:15 -0000', 'random_value': 81},
-            {'modify_time': 'Mon, 19 Apr 2021 06:03:15 -0000', 'random_value': 61},
-        ],
-        'sort_key': 'modify_time',
-        }
-    ]
-
-    for test_case in test_cases:
-        result = sort_by_rfc2822(data=test_case['case'], sort_key=test_case['sort_key'])
 
         assert test_case['expected'] == result
 
@@ -105,17 +78,5 @@ def test_flatten_user_response():
 
     for test_case in test_cases:
         result = flatten_user_response(test_case['case'])
-
-        assert test_case['expected'] == result
-
-
-def test_advance_date_by_microsecond():
-    test_cases = [
-        {'case': '2021-04-06T19:42:08.000000Z', 'expected': '2021-04-06T19:42:08.000001Z'},
-        {'case': '2000-01-01T00:00:00Z', 'expected': '2000-01-01T00:00:00.000001Z'},
-    ]
-
-    for test_case in test_cases:
-        result = advance_date_by_microsecond(test_case['case'])
 
         assert test_case['expected'] == result

@@ -32,17 +32,6 @@ def get_start_and_end_date_params(start_datetime: datetime) -> datetime:
     return start_datetime, start_datetime + datetime.timedelta(days=30)
 
 
-def sort_by_rfc2822(data: List[dict], sort_key) -> List[dict]:
-    """
-    Takes in a list of dictionaries and sorts them in ascending order by date.
-
-    :param data: the list of dictionaries to sort
-    :param sort_key: the name of the field containing an RFC 2822 formatted date
-    :return: a list of dictionaries sorted in ascending order by their RFC 2822 date
-    """
-    return sorted(data, key=lambda row: rfc2822_to_datetime(row[sort_key]))
-
-
 def flatten_user_response(response: dict) -> dict:
     """
     Takes in a response from the sailthru /user endpoint and flattens the response.
@@ -61,19 +50,6 @@ def flatten_user_response(response: dict) -> dict:
         'engagement': response.get('engagement'),
         'optout_email': response.get('optout_email'),
     }
-
-
-def advance_date_by_microsecond(date: str) -> str:
-    """
-    Adds a microsecond to the date.
-
-    :param date: The date string to add a microsecond to
-    :return: A new date string with an added microsecond
-    """
-
-    new_dt = singer.utils.strptime_to_utc(date) + datetime.timedelta(microseconds=1)
-
-    return singer.utils.strftime(new_dt)
 
 
 def _convert_to_snake_case(key: str) -> str:

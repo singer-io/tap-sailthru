@@ -14,10 +14,10 @@ import singer
 from singer import Transformer, metrics
 
 from tap_sailthru.client import SailthruClient
-from tap_sailthru.transform import (advance_date_by_microsecond,
-                                    flatten_user_response,
+from tap_sailthru.transform import (flatten_user_response,
                                     get_start_and_end_date_params,
-                                    rfc2822_to_datetime, sort_by_rfc2822, transform_keys_to_snake_case)
+                                    rfc2822_to_datetime,
+                                    transform_keys_to_snake_case)
 
 LOGGER = singer.get_logger()
 
