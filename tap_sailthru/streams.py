@@ -336,6 +336,7 @@ class Lists(FullTableStream):
     tap_stream_id = 'lists'
     key_properties = ['list_id']
 
+    # pylint: disable=missing-function-docstring
     @lru_cache
     def get_lists(self):
         return self.client.get_lists()

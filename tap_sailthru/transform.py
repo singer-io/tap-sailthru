@@ -4,7 +4,6 @@ Module for transformation and utility functions.
 
 import datetime
 from email import utils
-from typing import List
 
 import singer
 

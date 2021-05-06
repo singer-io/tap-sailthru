@@ -1,5 +1,6 @@
-# client class: api_key, api_secret, user_agent
-# http error codes
+"""
+Python client for Sailthru API
+"""
 
 import hashlib
 import json
@@ -59,9 +60,12 @@ class SailthruClient:
             values.append(params)
         return values
 
-    def get_signature_string(self, params: Union[list, dict], secret: str) -> bytes:
+    def get_signature_string(self,
+                             params: Union[list, dict],
+                             secret: str) -> bytes:
         """
-        Returns the unhashed signature string (secret + sorted list of param values) for an API call.
+        Returns the unhashed signature string
+        (secret + sorted list of param values) for an API call.
 
         :param params: dictionary values to generate signature string
         :param secret: secret string
@@ -173,9 +177,11 @@ class SailthruClient:
 
         return self.post('/job', params)
 
+    # pylint: disable=missing-function-docstring
     def get(self, endpoint, params):
         return self._build_request(endpoint, params, 'GET')
 
+    # pylint: disable=missing-function-docstring
     def post(self, endpoint, params):
         return self._build_request(endpoint, params, 'POST')
 
@@ -213,9 +219,11 @@ class SailthruClient:
         if response.status_code == 400 and response.json().get("error") == 99:
             raise SailthruClientStatsNotReadyError
         if response.status_code == 403 and response.json().get("error") == 99:
+            # pylint: disable=logging-fstring-interpolation
             LOGGER.warning(f"{response.json()}")
             return response.json()
         if response.status_code != 200:
+            # pylint: disable=logging-fstring-interpolation
             LOGGER.info(f"status_code: {response.status_code} - "
                         f"response: {response.json()}")
             raise SailthruClientError
