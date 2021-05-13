@@ -1,8 +1,6 @@
 import os
 import unittest
 
-from tap_sailthru.discover import get_schemas
-
 
 class SailthruBaseTest(unittest.TestCase):
     """
@@ -41,8 +39,73 @@ class SailthruBaseTest(unittest.TestCase):
         return self.expected_streams() - self.untestable_streams()
 
     def expected_metadata(self):
-        _, metadata = get_schemas()
-        return {table: metadata[table][0]['metadata'] for table in metadata.keys()}
+        return {
+            "ad_targeter_plans": {
+                self.PRIMARY_KEYS : [
+                    "plan_id"
+                ],
+                self.REPLICATION_METHOD : "FULL_TABLE",
+                "inclusion": "available"
+            },
+            "blasts": {
+                self.PRIMARY_KEYS : [
+                    "blast_id"
+                ],
+                self.REPLICATION_METHOD : "INCREMENTAL",
+                "inclusion": "available",
+                self.REPLICATION_KEYS : [
+                    "modify_time"
+                ]
+            },
+            "blast_query": {
+                self.PRIMARY_KEYS : [
+                    "profile_id"
+                ],
+                self.REPLICATION_METHOD : "FULL_TABLE",
+                "inclusion": "available"
+            },
+            "blast_repeats": {
+                self.PRIMARY_KEYS : [
+                    "repeat_id"
+                ],
+                self.REPLICATION_METHOD : "INCREMENTAL",
+                "inclusion": "available",
+                self.REPLICATION_KEYS : [
+                    "modify_time"
+                ]
+            },
+            "lists": {
+                self.PRIMARY_KEYS : [
+                    "list_id"
+                ],
+                self.REPLICATION_METHOD : "FULL_TABLE",
+                "inclusion": "available"
+            },
+            "blast_save_list": {
+                self.PRIMARY_KEYS : [
+                    "profile_id"
+                ],
+                self.REPLICATION_METHOD : "FULL_TABLE",
+                "inclusion": "available"
+            },
+            "users": {
+                self.PRIMARY_KEYS : [
+                    "profile_id"
+                ],
+                self.REPLICATION_METHOD : "FULL_TABLE",
+                "inclusion": "available"
+            },
+            "purchase_log": {
+                self.PRIMARY_KEYS : [
+                    "extid"
+                ],
+                self.REPLICATION_METHOD : "INCREMENTAL",
+                "inclusion": "available",
+                self.REPLICATION_KEYS : [
+                    "Date"
+                ]
+            }
+        }
 
     def run_and_verify_check_mode(self, conn_id):
         """
@@ -61,8 +124,6 @@ class SailthruBaseTest(unittest.TestCase):
         properties = {
             'start_date': '2017-01-01T00:00:00Z',
             'user_agent': 'tap-sailthru tap-tester@test.com',
-            'api_key': os.environ['TAP_SAILTHRU_API_KEY'],
-            'api_secret': os.environ['TAP_SAILTHRU_API_SECRET'],
         }
 
         if not original_properties:
