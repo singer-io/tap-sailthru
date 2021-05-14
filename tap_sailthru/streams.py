@@ -282,7 +282,7 @@ class BlastQuery(FullTableStream):
     Docs: https://getstarted.sailthru.com/developers/api/job/#blast-query
     """
     tap_stream_id = 'blast_query'
-    key_properties = ['profile_id']
+    key_properties = ['profile_id', 'blast_id']
     params = {
         'job': 'blast_query',
         'blast_id': '{blast_id}',
