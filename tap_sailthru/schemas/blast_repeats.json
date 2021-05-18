@@ -76,8 +76,7 @@
       "type": [
         "null",
         "integer"
-      ],
-      "format": "date-time"
+      ]
     },
     "suppress_list": {
       "type": [
@@ -101,8 +100,7 @@
       "type": [
         "null",
         "string"
-      ],
-      "format": "date-time"
+      ]
     },
     "start_date": {
       "type": [

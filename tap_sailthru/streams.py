@@ -139,7 +139,7 @@ class BaseStream:
         for key in self.date_keys:
             if key in record:
                 if record[key]:
-                    record[key] = rfc2822_to_datetime(record[key])
+                    record[key] = rfc2822_to_datetime(record[key]).isoformat()
 
 
 # pylint: disable=abstract-method
@@ -180,7 +180,7 @@ class IncrementalStream(BaseStream):
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in self.get_records(bookmark_datetime):
                 self.date_records_to_datetime(record)
-                record_datetime = record[self.replication_key]
+                record_datetime = singer.utils.strptime_to_utc(record[self.replication_key])
                 if record_datetime >= bookmark_datetime:
                     transform_keys_to_snake_case(record)
                     transformed_record = transformer.transform(record,
@@ -268,6 +268,7 @@ class Blasts(IncrementalStream):
     params = {
         'statuses': ['sent', 'sending', 'unscheduled', 'scheduled'],
     }
+    date_keys = ['start_time', 'modify_time', 'schedule_time']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
         # Will just return a list of blast_id if being called
@@ -297,6 +298,11 @@ class BlastQuery(FullTableStream):
         'blast_id': '{blast_id}',
     }
     parent = Blasts
+    date_keys = ['send_time',
+                 'open_time',
+                 'click_time',
+                 'purchase_time',
+                 'first_ten_clicks_time']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
 
@@ -349,6 +355,7 @@ class Lists(FullTableStream):
     """
     tap_stream_id = 'lists'
     key_properties = ['list_id']
+    date_keys = ['create_time']
 
     # pylint: disable=missing-function-docstring
     @lru_cache
@@ -384,6 +391,11 @@ class BlastSaveList(FullTableStream):
         'list': '{list_name}',
     }
     parent = Lists
+    date_keys = ['profile_created_date',
+                 'optout_time',
+                 'first_purchase_time',
+                 'last_purchase_time',
+                 'profile_created_date']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
 
@@ -437,6 +449,7 @@ class PurchaseLog(IncrementalStream):
         'start_date': '{purchase_log_start_date}',
         'end_date': '{purchase_log_end_date}',
     }
+    date_keys = ['Date']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
 
