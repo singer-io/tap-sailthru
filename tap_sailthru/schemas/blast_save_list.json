@@ -38,7 +38,8 @@
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "signup": {
       "type": [
@@ -86,7 +87,8 @@
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "list_signup": {
       "type": [
@@ -128,7 +130,8 @@
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "purchase_count": {
       "type": [
@@ -152,7 +155,8 @@
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "largest_purchase item_price": {
       "type": [

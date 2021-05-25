@@ -5,7 +5,7 @@ This module defines the stream classes and their individual sync logic.
 import csv
 import datetime
 import time
-from datetime import timedelta
+from datetime import date, timedelta
 from functools import lru_cache
 from typing import Any, Iterator
 
@@ -39,6 +39,7 @@ class BaseStream:
     valid_replication_keys = []
     params = {}
     parent = None
+    date_keys = []
 
     def __init__(self, client: SailthruClient):
         self.client = client
@@ -134,6 +135,13 @@ class BaseStream:
                     row.update(parent_params)
                 yield row
 
+    def date_records_to_datetime(self, record):
+        for key in self.date_keys:
+            if key in record:
+                if record[key]:
+                    record[key] = rfc2822_to_datetime(record[key]).isoformat()
+
+
 # pylint: disable=abstract-method
 class IncrementalStream(BaseStream):
     """
@@ -171,7 +179,8 @@ class IncrementalStream(BaseStream):
 
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in self.get_records(bookmark_datetime):
-                record_datetime = rfc2822_to_datetime(record[self.replication_key])
+                self.date_records_to_datetime(record)
+                record_datetime = singer.utils.strptime_to_utc(record[self.replication_key])
                 if record_datetime >= bookmark_datetime:
                     transform_keys_to_snake_case(record)
                     transformed_record = transformer.transform(record,
@@ -259,6 +268,7 @@ class Blasts(IncrementalStream):
     params = {
         'statuses': ['sent', 'sending', 'unscheduled', 'scheduled'],
     }
+    date_keys = ['start_time', 'modify_time', 'schedule_time']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
         # Will just return a list of blast_id if being called
@@ -282,12 +292,17 @@ class BlastQuery(FullTableStream):
     Docs: https://getstarted.sailthru.com/developers/api/job/#blast-query
     """
     tap_stream_id = 'blast_query'
-    key_properties = ['profile_id']
+    key_properties = ['profile_id', 'blast_id']
     params = {
         'job': 'blast_query',
         'blast_id': '{blast_id}',
     }
     parent = Blasts
+    date_keys = ['send_time',
+                 'open_time',
+                 'click_time',
+                 'purchase_time',
+                 'first_ten_clicks_time']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
 
@@ -318,6 +333,11 @@ class BlastRepeats(IncrementalStream):
     key_properties = ['repeat_id']
     replication_key = 'modify_time'
     valid_replication_keys = ['modify_time']
+    date_keys = ['create_time',
+                 'modify_time',
+                 'start_date',
+                 'end_date',
+                 'error_time']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
         response = self.client.get_blast_repeats()
@@ -335,6 +355,7 @@ class Lists(FullTableStream):
     """
     tap_stream_id = 'lists'
     key_properties = ['list_id']
+    date_keys = ['create_time']
 
     # pylint: disable=missing-function-docstring
     @lru_cache
@@ -370,6 +391,11 @@ class BlastSaveList(FullTableStream):
         'list': '{list_name}',
     }
     parent = Lists
+    date_keys = ['profile_created_date',
+                 'optout_time',
+                 'first_purchase_time',
+                 'last_purchase_time',
+                 'profile_created_date']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
 
@@ -423,6 +449,7 @@ class PurchaseLog(IncrementalStream):
         'start_date': '{purchase_log_start_date}',
         'end_date': '{purchase_log_end_date}',
     }
+    date_keys = ['Date']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
 

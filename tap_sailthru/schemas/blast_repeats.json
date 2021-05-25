@@ -30,25 +30,29 @@
     },
     "previous_blast_id": {
       "type": [
-        "null"
+        "null",
+        "integer"
       ]
     },
     "message_criteria": {
       "type": [
-        "null"
+        "null",
+        "string"
       ]
     },
     "create_time": {
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "modify_time": {
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "create_user": {
       "type": [
@@ -76,7 +80,8 @@
     },
     "suppress_list": {
       "type": [
-        "null"
+        "null",
+        "string"
       ]
     },
     "template": {
@@ -101,13 +106,15 @@
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "end_date": {
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "report_email": {
       "type": [
@@ -125,7 +132,8 @@
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "errors": {
       "type": [

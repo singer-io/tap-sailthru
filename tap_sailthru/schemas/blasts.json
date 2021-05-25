@@ -102,19 +102,22 @@
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "modify_time": {
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "schedule_time": {
       "type": [
         "null",
         "string"
-      ]
+      ],
+      "format": "date-time"
     },
     "email_count": {
       "type": [
