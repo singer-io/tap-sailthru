@@ -158,7 +158,7 @@
       ],
       "format": "date-time"
     },
-    "largest_purchase item_price": {
+    "largest_purchase_item_price": {
       "type": [
         "null",
         "string"
