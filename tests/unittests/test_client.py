@@ -3,7 +3,7 @@ from tap_sailthru.client import SailthruClient
 
 @pytest.fixture
 def client():
-    return SailthruClient('test', 'test', 'test')
+    return SailthruClient('test', 'test', 'test', 300)
 
 @pytest.mark.parametrize('test_input, expected', [
     ([{'a': 1}], [1]),
