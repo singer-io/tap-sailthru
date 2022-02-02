@@ -36,6 +36,91 @@ class SailthruClient429Error(Exception):
 class SailthruServer5xxError(Exception):
     pass
 
+class SailthruBadRequestError(SailthruClientError):
+    pass
+
+class SailthruUnauthorizedError(SailthruClientError):
+    pass
+
+class SailthruForbiddenError(SailthruClientError):
+    pass
+
+class SailthruNotFoundError(SailthruClientError):
+    pass
+
+class SailthruConflictError(SailthruClientError):
+    pass
+
+class SailthruMethodNotFoundError(SailthruClientError):
+    pass
+
+# error code to exception class and error message mapping
+ERROR_CODE_EXCEPTION_MAPPING = {
+    400: {
+        "raise_exception": SailthruBadRequestError,
+        "message": "The request is missing or has a bad parameter."
+    },
+    401: {
+        "raise_exception": SailthruUnauthorizedError,
+        "message": "Invalid authorization credentials."
+    },
+    403: {
+        "raise_exception": SailthruForbiddenError,
+        "message": "User does not have permission to access the resource."
+    },
+    404: {
+        "raise_exception": SailthruNotFoundError,
+        "message": "The resource you have specified cannot be found. Either the accounts provided are invalid or you do not have access to the Ad Account."
+    },
+    405: {
+        "raise_exception": SailthruMethodNotFoundError,
+        "message": "The provided HTTP method is not supported by the URL."
+    },
+    409: {
+        "raise_exception": SailthruConflictError,
+        "message": "The request could not be completed due to a conflict with the current state of the server."
+    },
+    429: {
+        "raise_exception": SailthruClient429Error,
+        "message": "API rate limit exceeded, please retry after some time."
+    },
+    500: {
+        "raise_exception": SailthruServer5xxError,
+        "message": "An error has occurred at Sailthru's end."
+    }
+}
+
+# get exception class based on status code
+def get_exception_for_status_code(status_code, error_code):
+    if status_code >= 500:
+        return SailthruServer5xxError
+    if status_code == 400 and error_code == 99:
+        return SailthruClientStatsNotReadyError
+
+    return ERROR_CODE_EXCEPTION_MAPPING.get(status_code, {}).get("raise_exception", SailthruClientError)
+
+def raise_for_error(response):
+    status_code = response.status_code
+    try:
+        json_response = response.json()
+    except Exception:
+        json_response = {}
+
+    # get sailthru error code, message and prepare message
+    error_code = json_response.get("error")
+    error_message = json_response.get("errormsg", ERROR_CODE_EXCEPTION_MAPPING.get(status_code, {}).get("message", "Unknown Error"))
+    message = "HTTP-error-code: {}, Error: {}, Message: {}".format(status_code, error_code, error_message)
+
+    # get exception class
+    exception = get_exception_for_status_code(status_code, error_code)
+
+    if status_code == 403 and error_code == 99:
+        LOGGER.warning("{}".format(json_response))
+
+    # add response with exception for 429 error, for 'retry_after_wait_gen'
+    if status_code == 429:
+        raise exception(message, response) from None
+    raise exception(message) from None
 
 def retry_after_wait_gen():
     while True:
@@ -228,18 +313,9 @@ class SailthruClient:
                                             headers=self.headers)
             timer.tags[metrics.Tag.http_status_code] = response.status_code
 
-        if response.status_code == 429:
-            raise SailthruClient429Error("rate limit exceeded", response)
-        if response.status_code >= 500:
-            raise SailthruServer5xxError
-        if response.status_code == 400 and response.json().get("error") == 99:
-            raise SailthruClientStatsNotReadyError
-        if response.status_code == 403 and response.json().get("error") == 99:
-            # pylint: disable=logging-fstring-interpolation
-            LOGGER.warning(f"{response.json()}")
-            return response.json()
+        # raise error if status code is not 200
         if response.status_code != 200:
-            raise SailthruClientError
+            raise_for_error(response)
 
         return response.json()
 
