@@ -185,7 +185,7 @@ class TestExceptionHandling(unittest.TestCase):
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
             # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 404, Error: 9, Message: The resource you have specified cannot be found. Either the accounts provided are invalid or you do not have access to the Ad Account.")
+            self.assertEquals(str(e), "HTTP-error-code: 404, Error: 9, Message: The resource you have specified cannot be found.")
 
     def test_405_error_custom_message(self, mocked_sleep, mocked_request):
         # mock json error response
