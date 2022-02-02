@@ -29,7 +29,7 @@ class TestRequestTimeoutValue(unittest.TestCase):
 
     def test_integer_request_timeout_in_config(self, mocked_request):
         """
-            Verify that if request_timeout is provided in config(integer value) then it should be use
+            Verify that if request_timeout is provided in config(integer value) then it should be used.
         """
         client = SailthruClient("test", "test", "test", 100) # integer timeout in config
 
@@ -42,7 +42,7 @@ class TestRequestTimeoutValue(unittest.TestCase):
 
     def test_float_request_timeout_in_config(self, mocked_request):
         """
-            Verify that if request_timeout is provided in config(float value) then it should be use
+            Verify that if request_timeout is provided in config(float value) then it should be used.
         """
         client = SailthruClient("test", "test", "test", 100.5)
 
@@ -55,7 +55,7 @@ class TestRequestTimeoutValue(unittest.TestCase):
 
     def test_string_request_timeout_in_config(self, mocked_request):
         """
-            Verify that if request_timeout is provided in config(string value) then it should be use
+            Verify that if request_timeout is provided in config(string value) then it should be used.
         """
         client = SailthruClient("test", "test", "test", "100") # string format timeout in config
 
@@ -68,7 +68,7 @@ class TestRequestTimeoutValue(unittest.TestCase):
 
     def test_empty_string_request_timeout_in_config(self, mocked_request):
         """
-            Verify that if request_timeout is provided in config with empty string then default value is used
+            Verify that if request_timeout is provided in the config with an empty string then the default value got used.
         """
         client = SailthruClient("test", "test", "test", "") # empty string in config
 
@@ -81,7 +81,7 @@ class TestRequestTimeoutValue(unittest.TestCase):
 
     def test_zero_request_timeout_in_config(self, mocked_request):
         """
-            Verify that if request_timeout is provided in config with zero value then default value is used
+            Verify that if request_timeout is provided in the config with zero value then the default value got used.
         """
         client = SailthruClient("test", "test", "test", 0.0) # zero value in config
 
@@ -94,7 +94,7 @@ class TestRequestTimeoutValue(unittest.TestCase):
 
     def test_zero_string_request_timeout_in_config(self, mocked_request):
         """
-            Verify that if request_timeout is provided in config with zero in string format then default value is used
+            Verify that if request_timeout is provided in the config with zero in string format then the default value got used.
         """
         client = SailthruClient("test", "test", "test", '0.0') # zero value in config
 
@@ -112,7 +112,7 @@ class TestRequestTimeoutBackoff(unittest.TestCase):
     @mock.patch('requests.Session.send', side_effect = requests.exceptions.Timeout)
     def test_request_timeout_backoff(self, mocked_request, mocked_sleep):
         """
-            Verify request function is backoff for 3 times on Timeout exception
+            Verify request function is backing off 3 times on the Timeout exception.
         """
         client = SailthruClient("test", "test", "test", 300)
 
