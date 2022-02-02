@@ -54,6 +54,9 @@ class SailthruConflictError(SailthruClientError):
 class SailthruMethodNotFoundError(SailthruClientError):
     pass
 
+class SailthruInternalServerError(SailthruServer5xxError):
+    pass
+
 # error code to exception class and error message mapping
 ERROR_CODE_EXCEPTION_MAPPING = {
     400: {
@@ -85,20 +88,22 @@ ERROR_CODE_EXCEPTION_MAPPING = {
         "message": "API rate limit exceeded, please retry after some time."
     },
     500: {
-        "raise_exception": SailthruServer5xxError,
+        "raise_exception": SailthruInternalServerError,
         "message": "An error has occurred at Sailthru's end."
     }
 }
 
 # get exception class based on status code
 def get_exception_for_status_code(status_code, error_code):
-    if status_code >= 500:
+    # return SailthruServer5xxError if status code is greater than 500
+    if status_code > 500:
         return SailthruServer5xxError
     if status_code == 400 and error_code == 99:
         return SailthruClientStatsNotReadyError
 
     return ERROR_CODE_EXCEPTION_MAPPING.get(status_code, {}).get("raise_exception", SailthruClientError)
 
+# raise error with proper message based in error code from the response
 def raise_for_error(response):
     status_code = response.status_code
     try:
