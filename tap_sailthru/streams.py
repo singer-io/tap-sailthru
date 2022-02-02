@@ -180,9 +180,9 @@ class IncrementalStream(BaseStream):
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in self.get_records(bookmark_datetime):
                 self.date_records_to_datetime(record)
+                transform_keys_to_snake_case(record)
                 record_datetime = singer.utils.strptime_to_utc(record[self.replication_key])
                 if record_datetime >= bookmark_datetime:
-                    transform_keys_to_snake_case(record)
                     transformed_record = transformer.transform(record,
                                                                stream_schema,
                                                                stream_metadata)
@@ -442,14 +442,14 @@ class PurchaseLog(IncrementalStream):
     """
     tap_stream_id = 'purchase_log'
     key_properties = ['extid']
-    replication_key = 'Date'
-    valid_replication_keys = ['Date']
+    replication_key = 'date'
+    valid_replication_keys = ['date']
     params = {
         'job': 'export_purchase_log',
         'start_date': '{purchase_log_start_date}',
         'end_date': '{purchase_log_end_date}',
     }
-    date_keys = ['Date']
+    date_keys = ['date']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
 
