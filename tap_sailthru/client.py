@@ -58,6 +58,12 @@ class SailthruClient:
         self.session = Session()
         self.headers = {'User-Agent': user_agent}
 
+    def check_platform_access(self) -> None:
+        """
+        Check that provided credentials are valid or not by requesting sample settings.
+        """
+        self.get('/settings', None)
+
     def extract_params(self, params: Union[list, dict]) -> list:
         """
         Extracts the values of a set of parameters, recursing into nested dictionaries.
