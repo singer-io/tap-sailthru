@@ -32,6 +32,15 @@ class SailthruDiscoverTest(SailthruBaseTest):
         # Verify that there are catalogs found
         found_catalogs = self.run_and_verify_check_mode(
             conn_id)
+        # Verify number of actual streams discovered match expected
+        self.assertEqual(len(found_catalogs),
+                         len(streams_to_test),
+                         msg="Expected {} streams, actual was {} for connection {},"
+                             " actual {}".format(
+                                 len(streams_to_test),
+                                 len(found_catalogs),
+                                 found_catalogs,
+                                 conn_id))
 
         # Verify stream names follow naming convention
         # streams should only have lowercase alphas and underscores
