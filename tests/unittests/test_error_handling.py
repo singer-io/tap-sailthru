@@ -44,8 +44,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruBadRequestError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 400, Error: 9, Message: Bad request for the URL.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 400, Error: 9, Message: Bad request for the URL.")
 
     def test_401_error_response_message(self, mocked_sleep, mocked_request):
         """
@@ -60,8 +61,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruUnauthorizedError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 401, Error: 9, Message: Unauthorized for the URL.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 401, Error: 9, Message: Unauthorized for the URL.")
 
     def test_403_error_response_message(self, mocked_sleep, mocked_request):
         """
@@ -76,8 +78,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruForbiddenError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 403, Error: 9, Message: Forbidden for the URL.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 403, Error: 9, Message: Forbidden for the URL.")
 
     def test_404_error_response_message(self, mocked_sleep, mocked_request):
         """
@@ -92,8 +95,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruNotFoundError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 404, Error: 9, Message: Not Found.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 404, Error: 9, Message: Not Found.")
 
     def test_405_error_response_message(self, mocked_sleep, mocked_request):
         """
@@ -108,8 +112,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruMethodNotFoundError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 405, Error: 9, Message: Bad request for the URL.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 405, Error: 9, Message: Method not found for the URL.")
 
     def test_409_error_response_message(self, mocked_sleep, mocked_request):
         """
@@ -124,8 +129,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruConflictError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 409, Error: 9, Message: Conflict occurred for the URL.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 409, Error: 9, Message: Conflict occurred for the URL.")
 
     def test_429_error_response_message(self, mocked_sleep, mocked_request):
         """
@@ -140,8 +146,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruClient429Error) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 429, Error: 9, Message: Rate limit exceeded for the URL.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 429, Error: 9, Message: Rate limit exceeded for the URL.")
 
     def test_500_error_response_message(self, mocked_sleep, mocked_request):
         """
@@ -156,8 +163,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruInternalServerError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 500, Error: 9, Message: Internal server error occurred.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 500, Error: 9, Message: Internal server error occurred.")
 
     def test_400_error_custom_message(self, mocked_sleep, mocked_request):
         """
@@ -172,8 +180,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruBadRequestError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 400, Error: 9, Message: The request is missing or has a bad parameter.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 400, Error: 9, Message: The request is missing or has a bad parameter.")
 
     def test_401_error_custom_message(self, mocked_sleep, mocked_request):
         """
@@ -188,8 +197,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruUnauthorizedError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 401, Error: 9, Message: Invalid authorization credentials.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 401, Error: 9, Message: Invalid authorization credentials.")
 
     def test_403_error_custom_message(self, mocked_sleep, mocked_request):
         """
@@ -204,8 +214,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruForbiddenError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 403, Error: 9, Message: User does not have permission to access the resource.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 403, Error: 9, Message: User does not have permission to access the resource.")
 
     def test_404_error_custom_message(self, mocked_sleep, mocked_request):
         """
@@ -220,8 +231,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruNotFoundError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 404, Error: 9, Message: The resource you have specified cannot be found.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 404, Error: 9, Message: The resource you have specified cannot be found.")
 
     def test_405_error_custom_message(self, mocked_sleep, mocked_request):
         """
@@ -236,8 +248,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruMethodNotFoundError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 405, Error: 9, Message: The provided HTTP method is not supported by the URL.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 405, Error: 9, Message: The provided HTTP method is not supported by the URL.")
 
     def test_409_error_custom_message(self, mocked_sleep, mocked_request):
         """
@@ -252,8 +265,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruConflictError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 409, Error: 9, Message: The request could not be completed due to a conflict with the current state of the server.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 409, Error: 9, Message: The request could not be completed due to a conflict with the current state of the server.")
 
     def test_429_error_custom_message(self, mocked_sleep, mocked_request):
         """
@@ -268,8 +282,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruClient429Error) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 429, Error: 9, Message: API rate limit exceeded, please retry after some time.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 429, Error: 9, Message: API rate limit exceeded, please retry after some time.")
 
     def test_500_error_custom_message(self, mocked_sleep, mocked_request):
         """
@@ -284,8 +299,9 @@ class TestExceptionHandling(unittest.TestCase):
         with self.assertRaises(client.SailthruInternalServerError) as e:
             # function call
             sailthru_client._build_request("test_endpoint", {}, "GET")
-            # verify the error is raised as expected with message
-            self.assertEquals(str(e), "HTTP-error-code: 500, Error: 9, Message: An error has occurred at Sailthru's end.")
+
+        # verify the error is raised as expected with message
+        self.assertEqual(str(e.exception), "HTTP-error-code: 500, Error: 9, Message: An error has occurred at Sailthru's end.")
 
     def test_200_response(self, mocked_sleep, mocked_request):
         """
@@ -301,4 +317,4 @@ class TestExceptionHandling(unittest.TestCase):
         response = sailthru_client._build_request("test_endpoint", {}, "GET")
 
         # verify the mocked data is coming as expected
-        self.assertEquals(response, response_json)
+        self.assertEqual(response, response_json)
