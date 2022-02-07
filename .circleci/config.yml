@@ -30,6 +30,7 @@ jobs:
             source /usr/local/share/virtualenvs/tap-sailthru/bin/activate
             pip install pytest-cov==2.8.1
             pytest --cov=tap_sailthru tests/unittests
+            coverage report -m
             coverage html
       - add_ssh_keys
       - store_test_results:
