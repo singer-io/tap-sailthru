@@ -13,7 +13,6 @@ jobs:
             python3 -mvenv /usr/local/share/virtualenvs/tap-sailthru
             source /usr/local/share/virtualenvs/tap-sailthru/bin/activate
             pip install -U 'pip<19.2' setuptools
-            pip install .[test]
       - run:
           name: 'JSON Validator'
           command: |
