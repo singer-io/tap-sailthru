@@ -28,8 +28,8 @@ jobs:
           name: 'Unit Tests'
           command: |
             source /usr/local/share/virtualenvs/tap-sailthru/bin/activate
-            pip install coverage
-            nosetests --with-coverage --cover-erase --cover-package=tap_sailthru --cover-html-dir=htmlcov tests/unittests
+            pip install pytest-cov==2.8.1
+            pytest --cov=tap_sailthru tests/unittests
             coverage html
       - add_ssh_keys
       - store_test_results:
