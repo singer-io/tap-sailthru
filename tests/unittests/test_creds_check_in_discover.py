@@ -32,10 +32,9 @@ class TestCredCheckInDiscoverMode(unittest.TestCase):
         }
         mocked_request.return_value = get_mock_http_response(401, {})
 
-        # Verify SailthruClientError exception is raised with 401 status code
+        # Verify SailthruClientError exception is raised
         with self.assertRaises(tap_sailthru.client.SailthruClientError) as e:
             catalog = discover(config)
-            self.assertEqual(e.response.status_code, 401)
 
         # Verify that get_schemas() is not called due to invalid credentials
         self.assertEqual(mocked_schema.call_count, 0)
