@@ -116,8 +116,7 @@ class SailthruBaseTest(unittest.TestCase):
 
     def get_properties(self, original_properties=True):
         properties = {
-            'start_date': '2021-04-01T00:00:00Z',
-            'user_agent': 'tap-sailthru tap-tester@test.com',
+            'start_date': '2021-04-01T00:00:00Z'
         }
 
         if original_properties:
