@@ -1,6 +1,6 @@
 import os
 import unittest
-
+from tap_tester import connections, runner, menagerie
 
 class SailthruBaseTest(unittest.TestCase):
     """
@@ -122,8 +122,7 @@ class SailthruBaseTest(unittest.TestCase):
 
     def get_properties(self, original_properties=True):
         properties = {
-            'start_date': '2017-01-01T00:00:00Z',
-            'user_agent': 'tap-sailthru tap-tester@test.com',
+            'start_date': '2017-01-01T00:00:00Z'
         }
 
         if not original_properties:
