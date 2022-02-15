@@ -29,8 +29,7 @@ class SailthruStartDateTest(SailthruBaseTest):
         """
         # Streams to verify start date tests
         # BUG: purchase_log stream has incorrect logic for date_windowing. BUG_ID: TDL-17521
-        # BUG: Getting different Record count for blast_query Job during multiple syncs. BUG_ID: TDL-17697
-        expected_streams = self.expected_sync_streams() - {"purchase_log", "blast_query"}
+        expected_streams = self.expected_sync_streams() - {"purchase_log"}
         self.run_test(expected_streams)
         
     def run_test(self, expected_streams):

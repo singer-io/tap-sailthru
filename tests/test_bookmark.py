@@ -26,9 +26,8 @@ class SailthruBookmarkTest(SailthruBaseTest):
         For EACH stream that is incrementally replicated there are multiple rows of data with
             different values for the replication key
         """
-        
-        # BUG: Getting different Record count for blast_query Job during multiple syncs. BUG_ID: TDL-17697
-        expected_streams = self.expected_sync_streams() - {"blast_query"}
+
+        expected_streams = self.expected_sync_streams()
         expected_replication_keys = self.expected_replication_keys()
         expected_replication_methods = self.expected_replication_method()
 
