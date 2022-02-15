@@ -61,7 +61,7 @@ class SailthruBookmarkTest(SailthruBaseTest):
         #   "purchase_log" -> "2021-04-05T00:00:00.000000Z"
         new_states = first_sync_bookmarks
         for stream in new_states.get("bookmarks").keys():
-            new_states.get("bookmarks")[stream][expected_replication_keys[stream]] = "2021-04-09T23:29:00.000000Z" if \
+            new_states.get("bookmarks")[stream][next(iter(expected_replication_keys[stream]))] = "2021-04-09T23:29:00.000000Z" if \
                 stream == "blast_repeats" else "2021-04-05T00:00:00.000000Z"
 
         menagerie.set_state(conn_id, new_states)
