@@ -15,7 +15,7 @@ class TestPurchaseLogPrimaryKey(unittest.TestCase):
         purchase_log = PurchaseLog(client=client)
 
         # expected PK for assertion
-        expected_PK = ["date", "email_hash", "extid", "message_id", "price"]
+        expected_PK = ["date", "email_hash", "extid", "message_id", "price", "channel"]
         # actual PK from the purchase log object
         actual_PK = purchase_log.key_properties
 

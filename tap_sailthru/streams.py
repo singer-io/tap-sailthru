@@ -441,7 +441,7 @@ class PurchaseLog(IncrementalStream):
     Docs: https://getstarted.sailthru.com/developers/api/job/#export-purchase-log
     """
     tap_stream_id = 'purchase_log'
-    key_properties = ['date', 'email_hash', 'extid', 'message_id', 'price']
+    key_properties = ['date', 'email_hash', 'extid', 'message_id', 'price', 'channel']
     replication_key = 'Date'
     valid_replication_keys = ['Date']
     params = {
