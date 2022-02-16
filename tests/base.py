@@ -97,7 +97,7 @@ class SailthruBaseTest(unittest.TestCase):
             },
             "purchase_log": {
                 self.PRIMARY_KEYS : [
-                    "extid"
+                    "date", "email_hash", "extid", "message_id", "price"
                 ],
                 self.REPLICATION_METHOD : "INCREMENTAL",
                 "inclusion": "available",
