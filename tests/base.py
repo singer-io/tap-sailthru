@@ -1,6 +1,6 @@
 import os
 import unittest
-
+from tap_tester import connections, menagerie, runner
 
 class SailthruBaseTest(unittest.TestCase):
     """
