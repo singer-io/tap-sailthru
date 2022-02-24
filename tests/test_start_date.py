@@ -28,8 +28,7 @@ class SailthruStartDateTest(SailthruBaseTest):
         • verify all data from later start data has bookmark values >= start_date
         """
         # Streams to verify start date tests
-        # BUG: purchase_log stream has incorrect logic for date_windowing. BUG_ID: TDL-17521
-        expected_streams = self.expected_sync_streams() - {"purchase_log"}
+        expected_streams = self.expected_sync_streams()
         self.run_test(expected_streams)
         
     def run_test(self, expected_streams):

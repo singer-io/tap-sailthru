@@ -456,8 +456,8 @@ class PurchaseLog(IncrementalStream):
         start_datetime, end_datetime = get_start_and_end_date_params(bookmark_datetime)
         now = singer.utils.now()
 
-        # Generate a report for each day up until the end date or today's date
-        while start_datetime.date() < min(end_datetime.date(), now.date()):
+        # Generate a report for each day up until the today's date
+        while start_datetime.date() <= now.date():
 
             job_date = start_datetime.strftime('%Y%m%d')
             self.params['start_date'] = job_date
