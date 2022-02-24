@@ -47,6 +47,7 @@ $ pip install -e .
     - `user_agent` (string, required): Process and email for API logging purposes. Example: tap-sailthru <api_user_email@your_company.com>
     - `api_key` (string, required): The API key
     - `api_secret` (string, required): The API secret
+    - `request_timeout` (string/integer/float, optional): The time for which request should wait to get response and default request_timeout is 300 seconds.
 
 And the other values mentioned in the authentication section above.
 
@@ -55,7 +56,8 @@ And the other values mentioned in the authentication section above.
 	"start_date": "2021-04-01T00:00:00Z",
 	"user_agent": "Stitch Tap (+support@stitchdata.com)",
 	"api_key": "<api_key>",
-	"api_secret": "<api_secret>"
+	"api_secret": "<api_secret>",
+  "request_timeout": 300
 }
 ```
 
