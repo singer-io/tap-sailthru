@@ -1,6 +1,10 @@
 import os
 import unittest
-from tap_tester import connections, runner, menagerie
+import tap_tester.connections as connections
+import tap_tester.menagerie as menagerie
+import tap_tester.runner as runner
+from datetime import datetime as dt
+from datetime import timedelta
 
 class SailthruBaseTest(unittest.TestCase):
     """
@@ -16,7 +20,7 @@ class SailthruBaseTest(unittest.TestCase):
     INCREMENTAL = "INCREMENTAL"
     FULL_TABLE = "FULL_TABLE"
     START_DATE_FORMAT = "%Y-%m-%dT00:00:00Z"
-
+    OBEYS_START_DATE = "obey-start-date"
 
     @staticmethod
     def tap_name():
@@ -41,69 +45,47 @@ class SailthruBaseTest(unittest.TestCase):
     def expected_metadata(self):
         return {
             "ad_targeter_plans": {
-                self.PRIMARY_KEYS : [
-                    "plan_id"
-                ],
-                self.REPLICATION_METHOD : "FULL_TABLE",
-                "inclusion": "available"
+                self.PRIMARY_KEYS : {"plan_id"},
+                self.REPLICATION_METHOD : self.FULL_TABLE,
+                self.OBEYS_START_DATE: False
             },
             "blasts": {
-                self.PRIMARY_KEYS : [
-                    "blast_id"
-                ],
-                self.REPLICATION_METHOD : "INCREMENTAL",
-                "inclusion": "available",
-                self.REPLICATION_KEYS : [
-                    "modify_time"
-                ]
+                self.PRIMARY_KEYS : {"blast_id"},
+                self.REPLICATION_METHOD : self.INCREMENTAL,
+                self.REPLICATION_KEYS : {"modify_time"},
+                self.OBEYS_START_DATE: True
             },
             "blast_query": {
-                self.PRIMARY_KEYS : [
-                    "profile_id"
-                ],
-                self.REPLICATION_METHOD : "FULL_TABLE",
-                "inclusion": "available"
+                self.PRIMARY_KEYS : {"profile_id", "blast_id"},
+                self.REPLICATION_METHOD : self.FULL_TABLE,
+                self.OBEYS_START_DATE: False
             },
             "blast_repeats": {
-                self.PRIMARY_KEYS : [
-                    "repeat_id"
-                ],
-                self.REPLICATION_METHOD : "INCREMENTAL",
-                "inclusion": "available",
-                self.REPLICATION_KEYS : [
-                    "modify_time"
-                ]
+                self.PRIMARY_KEYS : {"repeat_id"},
+                self.REPLICATION_METHOD : self.INCREMENTAL,
+                self.REPLICATION_KEYS : {"modify_time"},
+                self.OBEYS_START_DATE: True
             },
             "lists": {
-                self.PRIMARY_KEYS : [
-                    "list_id"
-                ],
-                self.REPLICATION_METHOD : "FULL_TABLE",
-                "inclusion": "available"
+                self.PRIMARY_KEYS : {"list_id"},
+                self.REPLICATION_METHOD : self.FULL_TABLE,
+                self.OBEYS_START_DATE: False
             },
             "blast_save_list": {
-                self.PRIMARY_KEYS : [
-                    "profile_id"
-                ],
-                self.REPLICATION_METHOD : "FULL_TABLE",
-                "inclusion": "available"
+                self.PRIMARY_KEYS : {"profile_id"},
+                self.REPLICATION_METHOD : self.FULL_TABLE,
+                self.OBEYS_START_DATE: False
             },
             "users": {
-                self.PRIMARY_KEYS : [
-                    "profile_id"
-                ],
-                self.REPLICATION_METHOD : "FULL_TABLE",
-                "inclusion": "available"
+                self.PRIMARY_KEYS : {"profile_id"},
+                self.REPLICATION_METHOD : self.FULL_TABLE,
+                self.OBEYS_START_DATE: False
             },
             "purchase_log": {
-                self.PRIMARY_KEYS : [
-                    "extid"
-                ],
-                self.REPLICATION_METHOD : "INCREMENTAL",
-                "inclusion": "available",
-                self.REPLICATION_KEYS : [
-                    "Date"
-                ]
+                self.PRIMARY_KEYS : {"extid"},
+                self.REPLICATION_METHOD : self.INCREMENTAL,
+                self.REPLICATION_KEYS : {"date"},
+                self.OBEYS_START_DATE: True
             }
         }
 
@@ -111,6 +93,7 @@ class SailthruBaseTest(unittest.TestCase):
         """
         Run the tap in check mode and verify it succeeds.
         This should be ran prior to field selection and initial sync.
+        Return the connection id and found catalogs from menagerie.
         """
 
         # Run a check job using orchestrator (discovery)
@@ -120,14 +103,26 @@ class SailthruBaseTest(unittest.TestCase):
         exit_status = menagerie.get_exit_status(conn_id, check_job_name)
         menagerie.verify_check_exit_status(self, exit_status, check_job_name)
 
+        found_catalogs = menagerie.get_catalogs(conn_id)
+        self.assertGreater(len(found_catalogs), 0, msg="unable to locate schemas for connection {}".format(conn_id))
+
+        found_catalog_names = set(map(lambda c: c['stream_name'], found_catalogs))
+        self.assertSetEqual(self.expected_streams(), found_catalog_names, msg="discovered schemas do not match")
+        print("discovered schemas are OK")
+
+        return found_catalogs
+
+
     def get_properties(self, original_properties=True):
         properties = {
-            'start_date': '2017-01-01T00:00:00Z'
+            'start_date': '2021-04-01T00:00:00Z'
         }
 
-        if not original_properties:
-            properties['start_date'] = '2021-01-01T00:00:00Z'
+        if original_properties:
+            return properties
 
+        # Reassign start date
+        properties["start_date"] = self.start_date
         return properties
 
     def get_credentials(self):
@@ -157,14 +152,14 @@ class SailthruBaseTest(unittest.TestCase):
         return a dictionary with key of table name and value as a set of primary key and replication
         key fields
         """
-        return {
-            table : self.expected_primary_keys()[table] | self.expected_replication_keys()[table]
-            for table in self.expected_metadata().keys()
-        }
+        auto_fields = {}
+        for k, v in self.expected_metadata().items():
+            auto_fields[k] = v.get(self.PRIMARY_KEYS, set()) |  v.get(self.REPLICATION_KEYS, set())
+        return auto_fields
 
     def expected_replication_method(self):
-        """return a dictionary with key of table name nd value of replication method"""
-        return {table: properties.get(self.REPLICATION_METHOD, None)
+        """return a dictionary with key of table name and value of replication method"""
+        return {table: properties.get(self.REPLICATION_METHOD, set())
                 for table, properties
                 in self.expected_metadata().items()}
 
@@ -206,67 +201,69 @@ class SailthruBaseTest(unittest.TestCase):
 
         return sync_record_count
 
-    def get_unique_records(self, stream, records):
-        unique_records = set()
-        for record in records:
-            # Build the primary key for this record, maintaining the same order for the fields
-            record_primary_key = [record[field]
-                                  for field in sorted(self.expected_primary_keys()[stream])]
-            # Cast to a tuple to make it hashable
-            unique_records.add(tuple(record_primary_key))
-        return unique_records
-
-    def verify_is_selected(self, is_selected):
-        """This is the assertion for the metadata for each field for every stream"""
-        self.assertTrue(is_selected)
-
-    def verify_stream_and_field_selection(self, conn_id):
+    def perform_and_verify_table_and_field_selection(self,
+                                                     conn_id,
+                                                     test_catalogs,
+                                                     select_all_fields=True):
         """
-        For expected sync streams, verify that
-        - fields that should be selected are selected
-          - controlled by `self.verify_is_selected()`
-        - automatic fields are automatic
-        - non-automatic fields are "inclusion": "available"
-        For streams we don't expect to sync, verify that
-        - "selected" is false
+        Perform table and field selection based off of the streams to select
+        set and field selection parameters.
+        Verify this results in the expected streams selected and all or no
+        fields selected for those streams.
         """
+
+        # Select all available fields or select no fields from all testable streams
+        self.select_all_streams_and_fields(
+            conn_id=conn_id, catalogs=test_catalogs, select_all_fields=select_all_fields
+        )
+
         catalogs = menagerie.get_catalogs(conn_id)
 
-        for catalog_entry in catalogs:
-            tap_stream_id = catalog_entry['tap_stream_id']
+        # Ensure our selection affects the catalog
+        expected_selected = [tc.get('stream_name') for tc in test_catalogs]
+        for cat in catalogs:
+            catalog_entry = menagerie.get_annotated_schema(conn_id, cat['stream_id'])
 
-            with self.subTest(tap_stream_id=tap_stream_id):
-                schema = menagerie.get_annotated_schema(conn_id, catalog_entry['stream_id'])
-                entry_metadata = schema.get('metadata', [])
-                if tap_stream_id in self.expected_sync_streams():
-                    for mdata in entry_metadata:
-                        is_selected = mdata.get('metadata').get('selected')
-                        if mdata.get('breadcrumb') == []:
-                            # Verify all expected sync streams are selected
-                            self.assertTrue(is_selected)
-                        else:
-                            inclusion = mdata.get('metadata', {}).get('inclusion')
-                            field_name = mdata.get('breadcrumb', ['properties', None])[1]
+            # Verify all testable streams are selected
+            selected = catalog_entry.get('annotated-schema').get('selected')
+            print("Validating selection on {}: {}".format(cat['stream_name'], selected))
+            if cat['stream_name'] not in expected_selected:
+                self.assertFalse(selected, msg="Stream selected, but not testable.")
+                continue # Skip remaining assertions if we aren't selecting this stream
+            self.assertTrue(selected, msg="Stream not selected.")
 
-                            automatic_fields = self.expected_automatic_fields()[tap_stream_id]
+            if select_all_fields:
+                # Verify all fields within each selected stream are selected
+                for field, field_props in catalog_entry.get('annotated-schema').get('properties').items():
+                    field_selected = field_props.get('selected')
+                    print("\tValidating selection on {}.{}: {}".format(
+                        cat['stream_name'], field, field_selected))
+                    self.assertTrue(field_selected, msg="Field not selected.")
+            else:
+                # Verify only automatic fields are selected
+                expected_automatic_fields = self.expected_automatic_fields().get(cat['stream_name'])
+                selected_fields = self.get_selected_fields_from_metadata(catalog_entry['metadata'])
+                self.assertEqual(expected_automatic_fields, selected_fields)
+    
+    @staticmethod
+    def get_selected_fields_from_metadata(metadata):
+        selected_fields = set()
+        for field in metadata:
+            is_field_metadata = len(field['breadcrumb']) > 1
+            inclusion_automatic_or_selected = (
+                field['metadata']['selected'] is True or \
+                field['metadata']['inclusion'] == 'automatic'
+            )
+            if is_field_metadata and inclusion_automatic_or_selected:
+                selected_fields.add(field['breadcrumb'][1])
+        return selected_fields
 
-                            self.assertIsNotNone(field_name)
+    def timedelta_formatted(self, dtime, days=0):
+        try:
+            date_stripped = dt.strptime(dtime, self.START_DATE_FORMAT)
+            return_date = date_stripped + timedelta(days=days)
 
-                            if field_name in automatic_fields:
-                                self.assertTrue(inclusion == 'automatic')
-                            else:
-                                self.verify_is_selected(is_selected)
-                                self.assertTrue(inclusion == 'available')
-                else:
-                    for mdata in entry_metadata:
-                        if mdata.get('breadcrumb') == []:
-                            self.assertFalse(mdata.get('metadata').get('selected'))
+            return dt.strftime(return_date, self.START_DATE_FORMAT)
 
-    def select_and_verify_fields(self, conn_id, select_all_fields = True):
-        """
-        Select all expected sync streams and fields.
-        If only_automatic is true, only select automatic fields
-        """
-        catalogs = menagerie.get_catalogs(conn_id)
-        self.select_all_streams_and_fields(conn_id, catalogs, select_all_fields = select_all_fields)
-        self.verify_stream_and_field_selection(conn_id)
+        except ValueError:
+                return Exception("Datetime object is not of the format: {}".format(self.START_DATE_FORMAT))
