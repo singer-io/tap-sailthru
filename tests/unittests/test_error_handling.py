@@ -303,6 +303,26 @@ class TestExceptionHandling(unittest.TestCase):
         # verify the error is raised as expected with message
         self.assertEqual(str(e.exception), "HTTP-error-code: 500, Error: 9, Message: An error has occurred at Sailthru's end.")
 
+    @mock.patch("tap_sailthru.client.LOGGER.warning")
+    def test_403_and_99_error_custom_message(self, mocked_logger_warning, mocked_sleep, mocked_request):
+        """
+            Test case to verify for 403 error ane 99 sailthru error code
+            we do not raise error and log that error with warning
+        """
+        # mock json error response
+        response_json = {"error": 99, "message": "You may not export a blast that has not been sent"}
+        mocked_request.return_value = get_response(403, response_json, True)
+
+        # create sailthru client
+        sailthru_client = client.SailthruClient("test_api_key", "test_api_secret", "test_user_agent")
+        # function call
+        actual_resp = sailthru_client._build_request("test_endpoint", {}, "GET")
+
+        # verify the logger.warning is called with expected message
+        mocked_logger_warning.assert_called_with("{}".format(response_json))
+        # verify the response we got is same as the mocked response
+        self.assertEqual(actual_resp, response_json)
+
     def test_200_response(self, mocked_sleep, mocked_request):
         """
             Test case to verify error is not raise for 200 status code
