@@ -10,12 +10,16 @@ from typing import Union
 
 import backoff
 from requests import Session
+from requests.exceptions import Timeout
 from singer import get_logger, metrics
 
 LOGGER = get_logger()
 
 # Backoff retries
 MAX_RETRIES = 3
+
+# timeout request after 300 seconds
+REQUEST_TIMEOUT = 300
 
 # pylint: disable=missing-class-docstring
 class SailthruClientError(Exception):
@@ -142,11 +146,24 @@ def retry_after_wait_gen():
 class SailthruClient:
     base_url = 'https://api.sailthru.com'
 
-    def __init__(self, api_key, api_secret, user_agent) -> None:
+    def __init__(self, api_key, api_secret, user_agent, request_timeout) -> None:
         self.__api_key = api_key
         self.__api_secret = api_secret
         self.session = Session()
         self.headers = {'User-Agent': user_agent}
+
+        # Set request timeout to config param `request_timeout` value.
+        # If value is 0,"0","" or not passed then it set default to 300 seconds.
+        if request_timeout and float(request_timeout):
+            self.__request_timeout = float(request_timeout)
+        else:
+            self.__request_timeout = REQUEST_TIMEOUT 
+
+    def check_platform_access(self) -> None:
+        """
+        Check that provided credentials are valid or not by requesting sample settings.
+        """
+        self.get('/settings', None)
 
     def extract_params(self, params: Union[list, dict]) -> list:
         """
@@ -303,7 +320,8 @@ class SailthruClient:
     @backoff.on_exception(backoff.expo,
                           (SailthruClientError,
                           SailthruServer5xxError,
-                          SailthruClientStatsNotReadyError),
+                          SailthruClientStatsNotReadyError,
+                          Timeout),
                           max_tries=MAX_RETRIES,
                           factor=2)
     def _make_request(self, url, payload, method):
@@ -315,7 +333,8 @@ class SailthruClient:
                                             url=url,
                                             params=params,
                                             data=data,
-                                            headers=self.headers)
+                                            headers=self.headers,
+                                            timeout=self.__request_timeout)
             timer.tags[metrics.Tag.http_status_code] = response.status_code
 
         # raise error if status code is not 200
