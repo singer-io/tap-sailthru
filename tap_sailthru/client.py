@@ -146,7 +146,7 @@ def retry_after_wait_gen():
 class SailthruClient:
     base_url = 'https://api.sailthru.com'
 
-    def __init__(self, api_key, api_secret, user_agent, request_timeout) -> None:
+    def __init__(self, api_key, api_secret, user_agent, request_timeout=REQUEST_TIMEOUT) -> None:
         self.__api_key = api_key
         self.__api_secret = api_secret
         self.session = Session()
