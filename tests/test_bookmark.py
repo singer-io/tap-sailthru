@@ -1,3 +1,4 @@
+import copy
 import tap_tester.connections as connections
 import tap_tester.runner as runner
 from base import SailthruBaseTest
@@ -25,9 +26,8 @@ class SailthruBookmarkTest(SailthruBaseTest):
         For EACH stream that is incrementally replicated there are multiple rows of data with
             different values for the replication key
         """
-        
-        # BUG: Getting different Record count for blast_query Job during multiple syncs. BUG_ID: TDL-17697
-        expected_streams = self.expected_sync_streams() - {"blast_query"}
+
+        expected_streams = self.expected_sync_streams()
         expected_replication_keys = self.expected_replication_keys()
         expected_replication_methods = self.expected_replication_method()
 
@@ -55,7 +55,15 @@ class SailthruBookmarkTest(SailthruBaseTest):
         # Update State Between Syncs
         ##########################################################################
 
-        new_states = first_sync_bookmarks
+        # update state bookmark for:
+        #   "blast_repeats" -> "2021-04-09T23:29:00.000000Z"
+        #   "blasts" -> "2021-04-05T00:00:00.000000Z"
+        #   "purchase_log" -> "2021-04-05T00:00:00.000000Z"
+        new_states = copy.deepcopy(first_sync_bookmarks)
+        for stream in new_states.get("bookmarks").keys():
+            new_states.get("bookmarks")[stream][next(iter(expected_replication_keys[stream]))] = "2021-04-09T23:29:00.000000Z" if \
+                stream == "blast_repeats" else "2021-04-05T00:00:00.000000Z"
+
         menagerie.set_state(conn_id, new_states)
 
         ##########################################################################

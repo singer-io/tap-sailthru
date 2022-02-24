@@ -28,8 +28,7 @@ class SailthruStartDateTest(SailthruBaseTest):
         • verify all data from later start data has bookmark values >= start_date
         """
         # Streams to verify start date tests
-        # BUG: Getting different Record count for blast_query Job during multiple syncs. BUG_ID: TDL-17697
-        expected_streams = self.expected_sync_streams() - {"blast_query"}
+        expected_streams = self.expected_sync_streams()
         self.run_test(expected_streams)
         
     def run_test(self, expected_streams):
