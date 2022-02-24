@@ -82,7 +82,7 @@ class SailthruBaseTest(unittest.TestCase):
                 self.OBEYS_START_DATE: False
             },
             "purchase_log": {
-                self.PRIMARY_KEYS : {"extid"},
+                self.PRIMARY_KEYS : {"date", "email_hash", "extid", "message_id", "price", "channel"},
                 self.REPLICATION_METHOD : self.INCREMENTAL,
                 self.REPLICATION_KEYS : {"date"},
                 self.OBEYS_START_DATE: True

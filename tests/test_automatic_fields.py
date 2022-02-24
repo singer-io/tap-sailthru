@@ -19,9 +19,6 @@ class SailthruAutomaticFieldsTest(SailthruBaseTest):
         """
         
         streams_to_test = self.expected_sync_streams()
-
-        # BUG: Primary Key is not correct for purchase_log stream. BUG-ID: TDL-17520
-        streams_to_test = streams_to_test - {'purchase_log'}
         
         conn_id = connections.ensure_connection(self)
 
@@ -63,7 +60,10 @@ class SailthruAutomaticFieldsTest(SailthruBaseTest):
                 for actual_keys in record_messages_keys:
                     self.assertSetEqual(expected_keys, actual_keys)
                     
-                # Verify that all replicated records have unique primary key values.
-                self.assertEqual(len(primary_keys_list), 
-                                    len(unique_primary_keys_list), 
-                                    msg="Replicated record does not have unique primary key values.")
+                # as per the scenario mentioned in the card "TDL-17520",
+                # we cannot uniquely identify some records hence, skipping this stream
+                if stream != "purchase_log":
+                    # Verify that all replicated records have unique primary key values.
+                    self.assertEqual(len(primary_keys_list),
+                                        len(unique_primary_keys_list),
+                                        msg="Replicated record does not have unique primary key values.")

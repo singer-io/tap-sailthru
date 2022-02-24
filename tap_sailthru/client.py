@@ -123,8 +123,10 @@ def raise_for_error(response):
     # get exception class
     exception = get_exception_for_status_code(status_code, error_code)
 
+    # return without raising error as for "blast_query" we have to skip syncing for that blast id
     if status_code == 403 and error_code == 99:
         LOGGER.warning("{}".format(json_response))
+        return
 
     # add response with exception for 429 error, for 'retry_after_wait_gen'
     if status_code == 429:
@@ -146,7 +148,7 @@ def retry_after_wait_gen():
 class SailthruClient:
     base_url = 'https://api.sailthru.com'
 
-    def __init__(self, api_key, api_secret, user_agent, request_timeout) -> None:
+    def __init__(self, api_key, api_secret, user_agent, request_timeout=REQUEST_TIMEOUT) -> None:
         self.__api_key = api_key
         self.__api_secret = api_secret
         self.session = Session()
