@@ -69,6 +69,12 @@ class SailthruClient:
         else:
             self.__request_timeout = REQUEST_TIMEOUT 
 
+    def check_platform_access(self) -> None:
+        """
+        Check that provided credentials are valid or not by requesting sample settings.
+        """
+        self.get('/settings', None)
+
     def extract_params(self, params: Union[list, dict]) -> list:
         """
         Extracts the values of a set of parameters, recursing into nested dictionaries.

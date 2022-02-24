@@ -115,11 +115,7 @@ class SailthruBaseTest(unittest.TestCase):
 
     def get_properties(self, original_properties=True):
         properties = {
-<<<<<<< HEAD
-            'start_date': '2017-01-01T00:00:00Z'
-=======
             'start_date': '2021-04-01T00:00:00Z'
->>>>>>> 63ccad30726a6173dfbfa263c62a177295a93690
         }
 
         if original_properties:
