@@ -90,7 +90,7 @@ def discover(config) -> Catalog:
 
     # Initialize SailthruClient() and call check_platform_access() to verify credentials
     api_key, api_secret = config.get('api_key'), config.get('api_secret')
-    client = SailthruClient(api_key, api_secret, config.get('user_agent'))
+    client = SailthruClient(api_key, api_secret, config.get('user_agent'), config.get('request_timeout'))
     client.check_platform_access()
 
     schemas, schemas_metadata = get_schemas()
