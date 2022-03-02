@@ -10,6 +10,7 @@ from singer import metadata
 from singer.catalog import Catalog
 
 from tap_sailthru.streams import STREAMS
+from tap_sailthru.client import SailthruClient
 
 
 def _get_abs_path(path: str) -> str:
@@ -82,10 +83,15 @@ def get_schemas() -> Tuple[dict, dict]:
     return schemas, schemas_metadata
 
 
-def discover() -> Catalog:
+def discover(config) -> Catalog:
     """
     Constructs a singer Catalog object based on the schemas and metadata.
     """
+
+    # Initialize SailthruClient() and call check_platform_access() to verify credentials
+    api_key, api_secret = config.get('api_key'), config.get('api_secret')
+    client = SailthruClient(api_key, api_secret, config.get('user_agent'), config.get('request_timeout'))
+    client.check_platform_access()
 
     schemas, schemas_metadata = get_schemas()
     streams = []
