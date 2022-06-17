@@ -45,7 +45,7 @@ def flatten_user_response(response: dict) -> dict:
         'cookie': response.get('keys', {}).get('cookie'),
         'email': response.get('keys', {}).get('email'),
         'vars': response.get('vars'),
-        'lists': list(response.get('lists', {}).keys()),
+        'lists': list((response.get('lists') or {}).keys()),  # 'lists' key may exist but may be None
         'engagement': response.get('engagement'),
         'optout_email': response.get('optout_email'),
     }
