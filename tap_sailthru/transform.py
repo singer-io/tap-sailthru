@@ -38,14 +38,15 @@ def flatten_user_response(response: dict) -> dict:
     :param response: the dictionary representing the response object from the api call
     :return: a flattened dicitonary
     """
-
+    # fixes AttributeError that occurs when trying to access "lists/keys"
+    keys = response.get('keys') or {}
     return {
         # TODO: should we keep date value from lists key? ask brian
-        'profile_id': response.get('keys', {}).get('sid'),
-        'cookie': response.get('keys', {}).get('cookie'),
-        'email': response.get('keys', {}).get('email'),
+        'profile_id': keys.get('sid'),
+        'cookie': keys.get('cookie'),
+        'email': keys.get('email'),
         'vars': response.get('vars'),
-        'lists': list(response.get('lists', {}).keys()),
+        'lists':list((response.get('lists') or {}).keys()),
         'engagement': response.get('engagement'),
         'optout_email': response.get('optout_email'),
     }

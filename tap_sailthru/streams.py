@@ -5,13 +5,13 @@ This module defines the stream classes and their individual sync logic.
 import csv
 import datetime
 import time
-from datetime import date, timedelta
-from functools import lru_cache
 from typing import Any, Iterator
-
+from functools import lru_cache
+from datetime import timedelta
 import requests
 import singer
 from singer import Transformer, metrics
+from singer.utils import strftime,now as dt_now
 
 from tap_sailthru.client import SailthruClient, SailthruClientError
 from tap_sailthru.transform import (flatten_user_response,
@@ -183,9 +183,7 @@ class IncrementalStream(BaseStream):
                 transform_keys_to_snake_case(record)
                 record_datetime = singer.utils.strptime_to_utc(record[self.replication_key])
                 if record_datetime >= bookmark_datetime:
-                    transformed_record = transformer.transform(record,
-                                                               stream_schema,
-                                                               stream_metadata)
+                    transformed_record = transformer.transform(record, stream_schema, stream_metadata)
                     singer.write_record(self.tap_stream_id, transformed_record)
                     counter.increment()
                     max_datetime = max(record_datetime, max_datetime)
@@ -275,7 +273,8 @@ class Blasts(IncrementalStream):
         # by child stream
         if is_parent:
             for status in self.params['statuses']:
-                response = self.client.get_blasts({'status': status})
+                #added query for start_date to prevent fetching blast_ids older than 540 days
+                response = self.client.get_blasts({'status': status,"start_date":strftime(bookmark_datetime)})
                 yield from (blast.get('blast_id') for blast in response.get('blasts'))
         else:
             for status in self.params['statuses']:
@@ -305,10 +304,15 @@ class BlastQuery(FullTableStream):
                  'first_ten_clicks_time']
 
     def get_records(self, bookmark_datetime=None, is_parent=False):
-
-        for blast_id in self.get_parent_data():
+        
+        # sailthru api limits querying of records older than 540 days 
+        # hence filtering records from the parent stream 
+        # that exceed this limit
+        # https://getstarted.sailthru.com/analytics/message-summary/reports/#:~:text=Note%3A%20Campaign%20data%20for%20any%20of%20the%20above%20reports%20cannot%20be%20exported%20after%20540%20days.
+        date_limit = dt_now() - datetime.timedelta(days=540)
+        LOGGER.info("Fetching for blasts Since %s",date_limit)
+        for blast_id in self.get_parent_data(date_limit):
             self.params['blast_id'] = blast_id
-
             response = self.post_job(parameter=blast_id)
             if response.get("error"):
                 # https://getstarted.sailthru.com/developers/api/job/#Error_Codes
