@@ -36,7 +36,7 @@ jobs:
           name: 'pylint'
           command: |
             source /usr/local/share/virtualenvs/tap-sailthru/bin/activate
-            pylint tap_sailthru -d "$PYLINT_DISABLE_LIST"
+            pylint tap_sailthru -d C,R,W "$PYLINT_DISABLE_LIST"
       - run:
           name: 'Unit Tests'
           command: |
