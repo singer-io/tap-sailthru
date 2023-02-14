@@ -43,8 +43,6 @@ jobs:
           name: 'Unit Tests'
           command: |
             source /usr/local/share/virtualenvs/tap-sailthru/bin/activate
-            nosetests tap_sailthru/tests
-            pip install coverage
             python -m pytest --junitxml=junit/test-result.xml --cov=tap_sailthru --cov-report=html tests/unittests/
       - store_test_results:
           path: test_output/report.xml
