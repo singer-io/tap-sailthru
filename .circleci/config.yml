@@ -1,68 +1,145 @@
 version: 2.1
 orbs:
   slack: circleci/slack@3.4.2
-jobs:
-  build:
+
+executors:
+  tap_tester:
     docker:
       - image: 218546966473.dkr.ecr.us-east-1.amazonaws.com/circle-ci:stitch-tap-tester
+jobs:
+  ensure_env:
+    executor: tap_tester
     steps:
       - checkout
       - run:
           name: 'Setup virtual env'
           command: |
-            python3 -mvenv /usr/local/share/virtualenvs/tap-sailthru
+            python3 -m venv /usr/local/share/virtualenvs/tap-sailthru/
             source /usr/local/share/virtualenvs/tap-sailthru/bin/activate
-            pip install 'pip==21.1.3'
-            pip install 'setuptools==56.0.0'
-            pip install .[test]
-            pip install pytest-cov
-      - run:
-          name: 'JSON Validator'
-          command: |
-            source /usr/local/share/virtualenvs/tap-tester/bin/activate
-            stitch-validate-json tap_sailthru/schemas/*.json
+            pip install -U 'pip<19.2' 'setuptools<51.0.0'
+            pip install .[dev]
+      - persist_to_workspace:
+          root: /usr/local/share/virtualenvs/
+          paths:
+            - tap-sailthru
+  build:
+    executor: tap_tester
+    steps:
+      - run: echo "Tests have passed."
+  run_pylint_and_unittests:
+    executor: tap_tester
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /usr/local/share/virtualenvs
       - run:
           name: 'pylint'
           command: |
             source /usr/local/share/virtualenvs/tap-sailthru/bin/activate
-            pylint tap_sailthru -d C,R,W
+            pylint tap_sailthru -d "$PYLINT_DISABLE_LIST"
       - run:
           name: 'Unit Tests'
           command: |
             source /usr/local/share/virtualenvs/tap-sailthru/bin/activate
-            python -m pytest --junitxml=junit/test-result.xml --cov=tap_sailthru --cov-report=html tests/unittests/
-      - add_ssh_keys
+            nosetests tap_sailthru/tests
+            pip install coverage
+            nosetests --with-coverage --cover-erase --cover-package=tap_sailthru --cover-html-dir=htmlcov tap_sailthru/tests/unittests
+            coverage html
       - store_test_results:
           path: test_output/report.xml
       - store_artifacts:
           path: htmlcov
       - run:
+          name: 'JSON Validator'
+          command: |
+            source /usr/local/share/virtualenvs/tap-tester/bin/activate
+            stitch-validate-json tap_sailthru/schemas/*.json
+  integration_test:
+    parameters:
+      test_command:
+        type: string
+    executor: tap_tester
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /usr/local/share/virtualenvs
+      - run:
           name: 'Integration Tests'
           command: |
-            aws s3 cp s3://com-stitchdata-dev-deployment-assets/environments/tap-tester/tap_tester_sandbox dev_env.sh
-            source dev_env.sh
+            mkdir /tmp/${CIRCLE_PROJECT_REPONAME}
+            export STITCH_CONFIG_DIR=/tmp/${CIRCLE_PROJECT_REPONAME}
             source /usr/local/share/virtualenvs/tap-tester/bin/activate
-            run-test --tap=tap-sailthru tests
+            << parameters.test_command >>
       - slack/notify-on-failure:
           only_for_branches: master
+      - store_artifacts:
+          path: /tmp/tap-sailthru
+
 workflows:
   version: 2
-  commit:
+  commit: &commit_jobs
     jobs:
+      - ensure_env:
+          context:
+            - circleci-user
+      - run_pylint_and_unittests:
+          context:
+            - circleci-user
+          requires:
+            - ensure_env
+      - integration_test:
+          name: "Discovery Test"
+          context:
+            - circleci-user
+          test_command: |-
+            run-test --tap=${CIRCLE_PROJECT_REPONAME} tests/test_discovery.py
+          requires:
+            - ensure_env
+      - integration_test:
+          name: "Automatic Fields Test"
+          context:
+            - circleci-user
+          test_command: |-
+            run-test --tap=${CIRCLE_PROJECT_REPONAME} tests/test_automatic_fields.py
+          requires:
+            - ensure_env
+      - integration_test:
+          name: "Start Date Test"
+          context:
+            - circleci-user
+          test_command: |-
+            run-test --tap=${CIRCLE_PROJECT_REPONAME} tests/test_start_date.py
+          requires:
+            - ensure_env
+      - integration_test:
+          name: "All Fields Test"
+          context:
+            - circleci-user
+          test_command: |-
+            run-test --tap=${CIRCLE_PROJECT_REPONAME} tests/test_all_fields.py
+          requires:
+            - "Start Date Test"
+            - "Automatic Fields Test"
+            - "Discovery Test"
+      - integration_test:
+          name: "Bookmarks Test"
+          context:
+            - circleci-user
+          test_command: |-
+            run-test --tap=${CIRCLE_PROJECT_REPONAME} tests/test_bookmarks.py
+          requires:
+            - "All Fields Test"
       - build:
           context:
             - circleci-user
-            - tap-tester-user
+          requires:
+            - "Bookmarks Test"
   build_daily:
+    <<: *commit_jobs
     triggers:
       - schedule:
-          cron: "0 0 * * *"
+          cron: "0 1 * * *"
           filters:
             branches:
               only:
                 - master
-    jobs:
-      - build:
-          context:
-            - circleci-user
-            - tap-tester-user
