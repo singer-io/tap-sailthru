@@ -45,8 +45,7 @@ jobs:
             source /usr/local/share/virtualenvs/tap-sailthru/bin/activate
             nosetests tap_sailthru/tests
             pip install coverage
-            nosetests --with-coverage --cover-erase --cover-package=tap_sailthru --cover-html-dir=htmlcov tap_sailthru/tests/unittests
-            coverage html
+            python -m pytest --junitxml=junit/test-result.xml --cov=tap_sailthru --cov-report=html tests/unittests/
       - store_test_results:
           path: test_output/report.xml
       - store_artifacts:
