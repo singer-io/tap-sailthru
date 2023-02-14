@@ -27,7 +27,8 @@ class SailthruBookmarkTest(SailthruBaseTest):
             different values for the replication key
         """
 
-        expected_streams = self.expected_sync_streams()
+        expected_streams = self.expected_sync_streams() - {"blast_query"}
+        # data not available for blast_query stream
         expected_replication_keys = self.expected_replication_keys()
         expected_replication_methods = self.expected_replication_method()
 

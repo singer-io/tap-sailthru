@@ -18,8 +18,8 @@ class SailthruAutomaticFieldsTest(SailthruBaseTest):
         Verify that all replicated records have unique primary key values.
         """
         
-        streams_to_test = self.expected_sync_streams()
-        
+        streams_to_test = self.expected_sync_streams() - {"blast_query"}
+        # data not available for blast_query stream
         conn_id = connections.ensure_connection(self)
 
         found_catalogs = self.run_and_verify_check_mode(conn_id)
