@@ -19,7 +19,7 @@ jobs:
             source /usr/local/share/virtualenvs/tap-sailthru/bin/activate
             pip install 'pip==21.1.3'
             pip install 'setuptools==56.0.0'
-            pip install .[test]
+            pip install .[dev]
             pip install pytest-cov
       - persist_to_workspace:
           root: /usr/local/share/virtualenvs/

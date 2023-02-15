@@ -22,6 +22,11 @@ setup(
 	'requests==2.25.1',
 	'singer-python==5.10.0',
     ],
+    extras_require= {
+          'dev': [
+              'pylint==2.7.4',
+          ]
+      },
     entry_points="""
     [console_scripts]
     tap-sailthru=tap_sailthru:main
