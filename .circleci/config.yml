@@ -31,7 +31,6 @@ jobs:
     steps:
       - run: echo "Tests have passed."
   run_pylint_and_unittests:
-    name: "Run Pylint & Unit Tests"
     executor: tap_tester
     steps:
       - checkout
