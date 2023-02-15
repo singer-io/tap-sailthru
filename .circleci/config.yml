@@ -120,9 +120,7 @@ workflows:
           test_command: |-
             run-test --tap=${CIRCLE_PROJECT_REPONAME} tests/test_all_fields.py
           requires:
-            - "Start Date Test"
-            - "Automatic Fields Test"
-            - "Discovery Test"
+            - ensure_env
       - integration_test:
           name: "Bookmarks Test"
           context:
@@ -130,7 +128,7 @@ workflows:
           test_command: |-
             run-test --tap=${CIRCLE_PROJECT_REPONAME} tests/test_bookmarks.py
           requires:
-            - "All Fields Test"
+            - ensure_env
       - build:
           context:
             - circleci-user
