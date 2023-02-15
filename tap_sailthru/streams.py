@@ -12,8 +12,7 @@ import requests
 import singer
 from singer import Transformer, metrics
 from singer.utils import strftime,now as dt_now
-from singer.transform import SchemaMismatch
-from tap_sailthru.client import SailthruClient, SailthruClientError
+from tap_sailthru.client import SailthruClient
 from tap_sailthru.transform import (flatten_user_response,
                                     get_start_and_end_date_params,
                                     rfc2822_to_datetime,
