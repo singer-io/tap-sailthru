@@ -127,7 +127,7 @@ workflows:
           context:
             - circleci-user
           test_command: |-
-            run-test --tap=${CIRCLE_PROJECT_REPONAME} tests/test_bookmarks.py
+            run-test --tap=${CIRCLE_PROJECT_REPONAME} tests/test_bookmark.py
           requires:
             - ensure_env
       - build:
