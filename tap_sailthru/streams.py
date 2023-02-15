@@ -12,7 +12,7 @@ import requests
 import singer
 from singer import Transformer, metrics
 from singer.utils import strftime,now as dt_now
-
+from singer.transform import SchemaMismatch
 from tap_sailthru.client import SailthruClient, SailthruClientError
 from tap_sailthru.transform import (flatten_user_response,
                                     get_start_and_end_date_params,
@@ -245,7 +245,7 @@ class AdTargeterPlans(FullTableStream):
         response = self.client.get_ad_targeter_plans()
         if not response.get('ad_plans'):
             LOGGER.critical('response is empty for ad_plans')
-            raise SailthruClientError
+            return []
         yield from response['ad_plans']
 
 
@@ -326,6 +326,32 @@ class BlastQuery(FullTableStream):
             yield from self.process_job_csv(export_url=export_url,
                                             parent_params={'blast_id': blast_id})
 
+    # pylint: disable=too-many-arguments
+    def sync(self,
+             state: dict,
+             stream_schema: dict,
+             stream_metadata: dict,
+             config: dict,
+             transformer: Transformer) -> dict:
+        """
+        The sync logic for an full table stream.
+
+        :param state: A dictionary representing singer state
+        :param stream_schema: A dictionary containing the stream schema
+        :param stream_metadata: A dictionnary containing stream metadata
+        :param config: A dictionary containing tap config data
+        :param transformer: A singer Transformer object
+        :return: State data in the form of a dictionary
+        """
+        with metrics.record_counter(self.tap_stream_id) as counter:
+            for record in self.get_records():
+                transform_keys_to_snake_case(record)
+                record["first_ten_clicks_time"] = record["first_ten_clicks_time"].split("|")
+                transformed_record = transformer.transform(record, stream_schema, stream_metadata)
+                singer.write_record(self.tap_stream_id, transformed_record)
+                counter.increment()
+
+        return state
 
 class BlastRepeats(IncrementalStream):
     """
@@ -347,7 +373,7 @@ class BlastRepeats(IncrementalStream):
         response = self.client.get_blast_repeats()
         if not response.get('repeats'):
             LOGGER.critical("response is empty for blast_repeats")
-            raise SailthruClientError
+            return []
         yield from response.get('repeats')
 
 
@@ -371,7 +397,7 @@ class Lists(FullTableStream):
         response = self.get_lists()
         if not response.get('lists'):
             LOGGER.critical("response is empty for lists")
-            raise SailthruClientError
+            return []
 
         # Will just return list names if called by child stream
         if is_parent:

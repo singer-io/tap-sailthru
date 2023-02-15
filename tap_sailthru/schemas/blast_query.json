@@ -65,9 +65,15 @@
     "first_ten_clicks_time": {
       "type": [
         "null",
-        "string"
+        "array"
       ],
-      "format": "date-time"
+      "items": {
+        "type": [
+          "null",
+          "string"
+        ],
+        "format": "date-time"
+      }
     }
   }
 }
