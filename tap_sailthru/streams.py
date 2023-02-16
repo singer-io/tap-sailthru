@@ -345,6 +345,7 @@ class BlastQuery(FullTableStream):
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in self.get_records():
                 transform_keys_to_snake_case(record)
+                record["first_ten_clicks"] = record["first_ten_clicks"].split()
                 record["first_ten_clicks_time"] = record["first_ten_clicks_time"].split("|")
                 transformed_record = transformer.transform(record, stream_schema, stream_metadata)
                 singer.write_record(self.tap_stream_id, transformed_record)
