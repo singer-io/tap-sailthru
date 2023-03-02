@@ -74,6 +74,26 @@ def test_flatten_user_response():
             'optout_email': None,
             }
         },
+        {'case': {
+            'keys': {
+                'sid': None,
+                'cookie': None,
+                'email': None,
+            },
+            'vars': None,
+            'lists': None,
+            'engagement': None,
+            'optout_email': None},
+        'expected': {
+            'profile_id': None,
+            'cookie': None,
+            'email': None,
+            'vars': None,
+            'lists': [],
+            'engagement': None,
+            'optout_email': None,
+            }
+        },
     ]
 
     for test_case in test_cases:

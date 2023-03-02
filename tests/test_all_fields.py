@@ -18,7 +18,8 @@ class SailthruAllfieldsTest(SailthruBaseTest):
         
         
         # Streams to verify all fields tests
-        expected_streams = self.expected_sync_streams()
+        expected_streams = self.expected_sync_streams() - {"blast_query"}
+        # data not available for blast_query stream
 
         expected_automatic_fields = self.expected_automatic_fields()
         conn_id = connections.ensure_connection(self)

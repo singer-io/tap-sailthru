@@ -46,8 +46,14 @@
     "first_ten_clicks": {
       "type": [
         "null",
-        "string"
-      ]
+        "array"
+      ],
+      "items": {
+        "type": [
+          "null",
+          "string"
+        ]
+      }
     },
     "purchase_time": {
       "type": [
@@ -65,9 +71,15 @@
     "first_ten_clicks_time": {
       "type": [
         "null",
-        "string"
+        "array"
       ],
-      "format": "date-time"
+      "items": {
+        "type": [
+          "null",
+          "string"
+        ],
+        "format": "date-time"
+      }
     }
   }
 }
