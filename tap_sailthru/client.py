@@ -327,8 +327,7 @@ class SailthruClient:
                           SailthruClientStatsNotReadyError,
                           Timeout,
                           ConnectionError,
-                          RemoteDisconnected
-                          ),
+                          RemoteDisconnected),
                           max_tries=MAX_RETRIES,
                           factor=2)
     def _make_request(self, url, payload, method):
