@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.0.1
+  * Updated Backoff Conditions added support for ConnectionResetError(104) and RemoteDisconnected Error.
 
 ## 1.0.0
   * Removed Additiona Package Dependencies [#16](https://github.com/singer-io/tap-sailthru/pull/16)

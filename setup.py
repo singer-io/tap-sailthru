@@ -10,7 +10,7 @@ with open(join(ROOT_DIR, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="tap-sailthru",
-    version="1.0.0",
+    version="1.0.1",
     description="Singer.io tap for the SailThru API",
     long_description=readme,
     long_description_content_type='text/markdown',
