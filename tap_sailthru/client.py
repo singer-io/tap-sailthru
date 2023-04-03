@@ -7,7 +7,7 @@ import json
 import math
 import sys
 from typing import Union
-
+from http.client import RemoteDisconnected
 import backoff
 from requests import Session
 from requests.exceptions import Timeout
@@ -320,10 +320,13 @@ class SailthruClient:
                           SailthruClient429Error,
                           max_tries=MAX_RETRIES)
     @backoff.on_exception(backoff.expo,
-                          (SailthruClientError,
+                          (Timeout,
+                          ConnectionError,
+                          RemoteDisconnected,
+                          SailthruClientError,
+                          ConnectionResetError,
                           SailthruServer5xxError,
-                          SailthruClientStatsNotReadyError,
-                          Timeout),
+                          SailthruClientStatsNotReadyError),
                           max_tries=MAX_RETRIES,
                           factor=2)
     def _make_request(self, url, payload, method):
