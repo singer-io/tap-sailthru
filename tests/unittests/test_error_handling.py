@@ -1,8 +1,8 @@
-from unittest import mock
-import tap_sailthru.client as client
-from http.client import RemoteDisconnected
 import unittest
 import requests
+from unittest import mock
+from http.client import RemoteDisconnected
+import tap_sailthru.client as client
 
 # mocked response class
 class Mockresponse:
