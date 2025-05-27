@@ -402,6 +402,9 @@ class Lists(FullTableStream):
         # Will just return list names if called by child stream
         if is_parent:
             for record in response['lists']:
+                if not record.get('name'):
+                    LOGGER.critical('no name for record')
+                    continue
                 yield record['name']
         else:
             yield from response['lists']

@@ -343,7 +343,14 @@ class SailthruClient:
         if response.status_code != 200:
             raise_for_error(response)
 
-        return response.json()
+        try:
+            if response.text.strip() == "":
+                LOGGER.info("Received empty response body.")
+                return {}
+            return response.json()
+        except ValueError:
+            LOGGER.error(f"Failed to decode response as JSON: {response.text}")
+            raise
 
     def _prepare_payload(self, data):
         payload = {
