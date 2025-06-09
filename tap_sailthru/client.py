@@ -344,8 +344,11 @@ class SailthruClient:
             raise_for_error(response)
 
         try:
-            if response.text.strip() == "":
+            if isinstance(response.text, str) and response.text.strip() == "":
                 LOGGER.info("Received empty response body.")
+                return {}
+            if isinstance(response.text, dict) and not response.text:
+                LOGGER.info("Received empty JSON response.")
                 return {}
             return response.json()
         except ValueError:
