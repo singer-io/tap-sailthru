@@ -31,4 +31,4 @@ class PurchaseLogDateWindow(unittest.TestCase):
         # verify the date window worked by comparing the call count of "post_job" function
         # start date = 01-01-2021, now date = 01-03-2021
         # date diff (in days) = 60 (inclusive), previously it was 30 calls
-        self.assertEquals(mocked_post_job.call_count, 60)
+        self.assertEqual(mocked_post_job.call_count, 60)

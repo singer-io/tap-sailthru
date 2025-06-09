@@ -402,6 +402,9 @@ class Lists(FullTableStream):
         # Will just return list names if called by child stream
         if is_parent:
             for record in response['lists']:
+                if not record.get('name'):
+                    LOGGER.critical('name is null/empty in lists record')
+                    continue
                 yield record['name']
         else:
             yield from response['lists']
@@ -460,6 +463,9 @@ class Users(FullTableStream):
                 continue
             profile_id = record['Profile Id']
             response = self.client.get_user({'id': profile_id})
+            if not response:
+                LOGGER.critical('Empty response for profile_id: %s. Hence, skipping', profile_id)
+                continue
             yield flatten_user_response(response)
 
 

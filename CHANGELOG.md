@@ -1,6 +1,10 @@
 # Changelog
 
 
+## 1.1.0
+  * Added handling for null values when processing list names [#20](https://github.com/singer-io/tap-sailthru/pull/20)
+  * Bumped singer-python and requests to 6.1.1 and 2.32.3, respectively.
+
 ## 1.0.0
   * Removed Additiona Package Dependencies [#16](https://github.com/singer-io/tap-sailthru/pull/16)
   * Support for parallel execution of integration tests [#15](https://github.com/singer-io/tap-sailthru/pull/15)

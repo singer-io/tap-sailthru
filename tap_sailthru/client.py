@@ -138,8 +138,11 @@ def retry_after_wait_gen():
         # This is called in an except block so we can retrieve the exception
         # and check it.
         exc_info = sys.exc_info()
-        resp = exc_info[1].response
-        sleep_time_str = resp.headers.get('X-Rate-Limit-Remaining')
+        if exc_info[1] and hasattr(exc_info[1], "response"):
+            resp = exc_info[1].response
+            sleep_time_str = resp.headers.get('X-Rate-Limit-Remaining', "1")
+        else:
+            sleep_time_str = "1"
         LOGGER.info(f'API rate limit exceeded -- sleeping for '
                     f'{sleep_time_str} seconds')
         yield math.floor(float(sleep_time_str))
@@ -343,7 +346,17 @@ class SailthruClient:
         if response.status_code != 200:
             raise_for_error(response)
 
-        return response.json()
+        try:
+            if isinstance(response.text, str) and response.text.strip() == "":
+                LOGGER.info("Received empty response body.")
+                return {}
+            if isinstance(response.text, dict) and not response.text:
+                LOGGER.info("Received empty JSON response.")
+                return {}
+            return response.json()
+        except ValueError:
+            LOGGER.error(f"Failed to decode response as JSON: {response.text}")
+            raise
 
     def _prepare_payload(self, data):
         payload = {
