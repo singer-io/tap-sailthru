@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.0.1
+  * Bump dependency versions for twistlock compliance [#23](https://github.com/singer-io/tap-sailthru/pull/23)
 
 ## 1.0.0
   * Removed Additiona Package Dependencies [#16](https://github.com/singer-io/tap-sailthru/pull/16)
