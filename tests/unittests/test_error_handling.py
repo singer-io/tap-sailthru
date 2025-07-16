@@ -1,7 +1,8 @@
-from unittest import mock
-import tap_sailthru.client as client
 import unittest
 import requests
+from unittest import mock
+from http.client import RemoteDisconnected
+import tap_sailthru.client as client
 
 # mocked response class
 class Mockresponse:
@@ -338,3 +339,37 @@ class TestExceptionHandling(unittest.TestCase):
 
         # verify the mocked data is coming as expected
         self.assertEqual(response, response_json)
+
+    def test_connection_error_backoff(self, mocked_sleep, mocked_request):
+        """
+            Test case to verify error is not raise for 200 status code
+        """
+        
+        mocked_request.side_effect = ConnectionResetError()
+        
+        # create sailthru client
+        sailthru_client = client.SailthruClient("test_api_key", "test_api_secret", "test_user_agent")
+        # function call
+        try:
+            response = sailthru_client._build_request("test_endpoint", {}, "GET")
+        except ConnectionResetError:
+            pass
+
+        self.assertEqual(mocked_request.call_count, 3)
+
+    def test_remotedisconnected_error_backoff(self, mocked_sleep, mocked_request):
+        """
+            Test case to verify error is not raise for 200 status code
+        """
+        
+        mocked_request.side_effect = RemoteDisconnected()
+        
+        # create sailthru client
+        sailthru_client = client.SailthruClient("test_api_key", "test_api_secret", "test_user_agent")
+        # function call
+        try:
+            response = sailthru_client._build_request("test_endpoint", {}, "GET")
+        except RemoteDisconnected:
+            pass
+
+        self.assertEqual(mocked_request.call_count, 3)
