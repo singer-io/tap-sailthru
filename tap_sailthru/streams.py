@@ -459,12 +459,12 @@ class Users(FullTableStream):
 
         for record in self.get_parent_data():
             if not record.get('Profile Id'):
-                LOGGER.critical('no Profile Id for record')
+                LOGGER.warning('no Profile Id for record')
                 continue
             profile_id = record['Profile Id']
             response = self.client.get_user({'id': profile_id})
             if not response:
-                LOGGER.critical('Empty response for profile_id: %s. Hence, skipping', profile_id)
+                LOGGER.warning('Empty response for profile_id: %s. Hence, skipping', profile_id)
                 continue
             yield flatten_user_response(response)
 
