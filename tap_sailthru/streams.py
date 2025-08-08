@@ -403,7 +403,7 @@ class Lists(FullTableStream):
         if is_parent:
             for record in response['lists']:
                 if not record.get('name'):
-                    LOGGER.critical('name is null/empty in lists record')
+                    LOGGER.warning('name is null/empty in lists record')
                     continue
                 yield record['name']
         else:
