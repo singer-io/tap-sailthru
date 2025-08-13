@@ -35,7 +35,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: /usr/local/share/virtualenvs
+          at: /
       - run:
           name: 'pylint'
           command: |
@@ -66,7 +66,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: /usr/local/share/virtualenvs
+          at: /
       - run:
           name: 'Integration Tests'
           command: |
