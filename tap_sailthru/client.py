@@ -12,6 +12,8 @@ import backoff
 from requests import Session
 from requests.exceptions import Timeout
 from singer import get_logger, metrics
+from requests.exceptions import ConnectionError
+from http.client import RemoteDisconnected
 
 LOGGER = get_logger()
 
@@ -323,7 +325,9 @@ class SailthruClient:
                           (SailthruClientError,
                           SailthruServer5xxError,
                           SailthruClientStatsNotReadyError,
-                          Timeout),
+                          Timeout,
+                          ConnectionError,
+                          RemoteDisconnected),
                           max_tries=MAX_RETRIES,
                           factor=2)
     def _make_request(self, url, payload, method):
