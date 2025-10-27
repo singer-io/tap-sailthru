@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.0
+  * Add parent_tap_stream_id to the stream [#26](https://github.com/singer-io/tap-sailthru/pull/26)
+
 ## 1.0.1
   * Bump dependency versions for twistlock compliance [#23](https://github.com/singer-io/tap-sailthru/pull/23)
 
