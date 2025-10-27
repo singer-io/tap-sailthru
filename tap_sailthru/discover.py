@@ -98,6 +98,15 @@ def discover(config) -> Catalog:
 
     for schema_name, schema in schemas.items():
         schema_meta = schemas_metadata[schema_name]
+        stream_obj = STREAMS[schema_name]
+        meta_map = metadata.to_map(schema_meta)
+
+        parent_attr = getattr(stream_obj, "parent", None)
+        parent_tap_stream_id = None
+        if parent_attr:
+            parent_tap_stream_id = parent_attr.__name__ if isinstance(parent_attr, type) else str(parent_attr)
+            meta_map = metadata.write(meta_map, (), 'parent-tap-stream-id', parent_tap_stream_id)
+        schema_meta = metadata.to_list(meta_map)
 
         catalog_entry = {
             'stream': schema_name,
@@ -106,7 +115,8 @@ def discover(config) -> Catalog:
             'key_properties': _get_key_properties_from_meta(schema_meta),
             'replication_method': _get_replication_method_from_meta(schema_meta),
             'replication_key': _get_replication_key_from_meta(schema_meta),
-            'metadata': schema_meta
+            'metadata': schema_meta,
+            'parent_tap_stream_id': parent_tap_stream_id
         }
 
         streams.append(catalog_entry)
