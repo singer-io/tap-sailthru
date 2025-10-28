@@ -103,7 +103,7 @@ def discover(config) -> Catalog:
         parent_attr = getattr(stream_obj, "parent", None)
         if parent_attr:
             meta_map = metadata.to_map(schema_meta)
-            parent_tap_stream_id = parent_attr.__name__ if isinstance(parent_attr, type) else str(parent_attr)
+            parent_tap_stream_id = parent_attr.__name__
             meta_map = metadata.write(meta_map, (), 'parent-tap-stream-id', parent_tap_stream_id)
             schema_meta = metadata.to_list(meta_map)
 
