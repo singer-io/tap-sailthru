@@ -24,7 +24,7 @@ setup(
     ],
     extras_require= {
           'dev': [
-              'pylint==2.7.4',
+              'pylint',
           ]
       },
     entry_points="""
