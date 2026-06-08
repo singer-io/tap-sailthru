@@ -19,7 +19,7 @@ setup(
     classifiers=["Programming Language :: Python :: 3 :: Only"],
     py_modules=["tap_sailthru"],
     install_requires=[
-	'requests==2.32.4',
+	'requests==2.34.2',
 	'singer-python==5.13.2',
     ],
     extras_require= {
