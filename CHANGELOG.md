@@ -1,5 +1,9 @@
 # Changelog
 
+# 1.0.2
+  * Bump requests to 2.33.0 for security updates [#27](https://github.com/singer-io/tap-sailthru/pull/27)
+
+
 ## 1.0.1
   * Bump dependency versions for twistlock compliance [#23](https://github.com/singer-io/tap-sailthru/pull/23)
 
