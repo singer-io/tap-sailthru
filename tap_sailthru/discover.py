@@ -98,6 +98,14 @@ def discover(config) -> Catalog:
 
     for schema_name, schema in schemas.items():
         schema_meta = schemas_metadata[schema_name]
+        stream_obj = STREAMS[schema_name]
+
+        parent_attr = getattr(stream_obj, "parent", None)
+        if parent_attr:
+            meta_map = metadata.to_map(schema_meta)
+            parent_tap_stream_id = parent_attr.tap_stream_id
+            meta_map = metadata.write(meta_map, (), 'parent-tap-stream-id', parent_tap_stream_id)
+            schema_meta = metadata.to_list(meta_map)
 
         catalog_entry = {
             'stream': schema_name,

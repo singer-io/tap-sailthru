@@ -10,7 +10,7 @@ with open(join(ROOT_DIR, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="tap-sailthru",
-    version="1.0.2",
+    version="1.1.0",
     description="Singer.io tap for the SailThru API",
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -19,7 +19,7 @@ setup(
     classifiers=["Programming Language :: Python :: 3 :: Only"],
     py_modules=["tap_sailthru"],
     install_requires=[
-	'requests==2.33.0',
+	'requests==2.34.2',
 	'singer-python==5.13.2',
     ],
     extras_require= {

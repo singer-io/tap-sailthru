@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.1.0
+  * Add parent_tap_stream_id to the stream [#26](https://github.com/singer-io/tap-sailthru/pull/26)
 # 1.0.2
   * Bump requests to 2.33.0 for security updates [#27](https://github.com/singer-io/tap-sailthru/pull/27)
 
